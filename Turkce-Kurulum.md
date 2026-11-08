@@ -9,8 +9,7 @@
 > [yavaş yavaş artıracağını yazdı](https://x.com/flop_labs/status/2119121264388526205). Bugün
 > ağda sadece FLOP'un kendi 10 validatörü çalışıyor. Sponsorla kaydedilen tek yeni validatör de
 > 6 Kasım'dan beri sırada bekliyor. GitHub'daki başvuru sayfasına 30'dan fazla kişi bilgilerini
-> yazdı ve FLOP henüz hiçbirine cevap vermedi. Onay gelmeden aylık yüzlerce dolarlık bir sunucu
-> kiralamayın.
+> yazdı ve FLOP henüz hiçbirine cevap vermedi. Onay gelmeden büyük bir sunucu kiralamayın.
 
 Bu rehber, FLOP Devnet'te validatör olmak için sunucusunu hazırlayıp başvurmak isteyenler için
 hazırlandı.
@@ -64,7 +63,6 @@ GPU'nuz varsa miner da kurabilirsiniz. Miner için onay gerekmez:
 | İnternet | 1 Gbps, kesintisiz |
 | İşletim sistemi | Linux amd64 (Ubuntu 22.04 veya 24.04) |
 | Programlar | Docker ve Docker Compose, Node.js 24, pnpm 12.14.0, curl, jq, Tailscale, age |
-| Aylık maliyet | FLOP'un tahmini: yaklaşık 300 dolar |
 
 FLOP bu değerlerin ölçülmüş devnet alt sınırları olmadığını, planlama tahminleri olduğunu
 söylüyor.

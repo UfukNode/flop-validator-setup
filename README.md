@@ -9,8 +9,8 @@
 > ["will be expanding cap slowly"](https://x.com/flop_labs/status/2119121264388526205). Today only
 > FLOP's own 10 validators are running, and the one new sponsored validator has been waiting in
 > the queue since 6 November. More than 30 people have posted their details in the application
-> thread on GitHub, and FLOP has not answered any of them yet. Do not rent a server that costs
-> hundreds of dollars a month before you are admitted.
+> thread on GitHub, and FLOP has not answered any of them yet. Do not rent a big server before
+> you are admitted.
 
 This guide is for anyone who wants to prepare a server and apply to run a validator on the FLOP
 Devnet.
@@ -64,7 +64,6 @@ If you have a GPU, you can also run a miner, which needs no approval:
 | Network | 1 Gbps, reliable |
 | Operating system | Linux amd64 (Ubuntu 22.04 or 24.04) |
 | Programs | Docker and Docker Compose, Node.js 24, pnpm 12.14.0, curl, jq, Tailscale, age |
-| Monthly cost | FLOP's estimate: about $300 |
 
 FLOP says these values are planning estimates, not measured devnet minimums.
 
