@@ -277,9 +277,9 @@ ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub
 
 1. **İlgi formu:** https://flop.finance/apply/validator adresindeki formu doldurun. Kurulum türü
    olarak **Self-hosted**, zaman olarak **Testnet** seçin.
-2. **GitHub #10:** FLOP ekibinden tanıdığınız yoksa
-   [#10](https://github.com/flop-labs/network/issues/10) sayfasına şu metni kendi bilgilerinizle
-   yazın:
+2. **GitHub #10:** FLOP'un belgesine göre, FLOP ekibinden tanıdığınız yoksa
+   [#10](https://github.com/flop-labs/network/issues/10) sayfasına yorum yazıp tanıştırılma
+   istiyorsunuz. Şu metni kendi bilgilerinizle kullanabilirsiniz:
 
 ```text
 Devnet validator onboarding request. I have no operations contact yet.
@@ -298,8 +298,8 @@ I can confirm the host key fingerprint on a second channel.
 This comment contains only public values.
 ```
 
-- Yazmak onay anlamına gelmez ve FLOP cevap süresi vermiyor. Güncellemeleri
-  [@flop_labs](https://x.com/flop_labs) hesabından takip edin.
+- Bu yorum onay anlamına gelmez. FLOP cevap süresi vermiyor ve şu ana kadar orada kimseye cevap
+  vermedi. Güncellemeleri [@flop_labs](https://x.com/flop_labs) hesabından takip edin.
 
 ---
 

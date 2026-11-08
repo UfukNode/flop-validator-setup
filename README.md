@@ -274,8 +274,9 @@ Example output:
 
 1. **Interest form:** fill in the form at https://flop.finance/apply/validator. Choose
    **Self-hosted** as the setup type and **Testnet** as the timing.
-2. **GitHub #10:** if you have no contact on the FLOP team, post this text with your own details
-   in [#10](https://github.com/flop-labs/network/issues/10):
+2. **GitHub #10:** according to FLOP's docs, if you have no contact on the FLOP team, you ask for
+   an introduction with a comment in [#10](https://github.com/flop-labs/network/issues/10). You
+   can use this text with your own details:
 
 ```text
 Devnet validator onboarding request. I have no operations contact yet.
@@ -294,8 +295,8 @@ I can confirm the host key fingerprint on a second channel.
 This comment contains only public values.
 ```
 
-- Posting is not an admission, and FLOP promises no response time. Follow
-  [@flop_labs](https://x.com/flop_labs) for updates.
+- The comment is not an admission. FLOP promises no response time and has not answered anyone
+  there so far. Follow [@flop_labs](https://x.com/flop_labs) for updates.
 
 ---
 
