@@ -11,18 +11,19 @@
 > 6 Kasım'dan beri sırada bekliyor. GitHub'daki başvuru sayfasına 30'dan fazla kişi bilgilerini
 > yazdı ve FLOP henüz hiçbirine cevap vermedi. Onay gelmeden büyük bir sunucu kiralamayın.
 
-Bu rehber, FLOP Devnet'te validatör olmak için sunucusunu hazırlayıp başvurmak isteyenler için
-hazırlandı.
+Bu rehber, FLOP Devnet'te validatör olmak için sunucusunu sıfırdan hazırlayıp başvurmak
+isteyenler için hazırlandı.
 
 Validatör, FLOP ağında blok üreten, blokların kesinleşmesi için oy veren ve ağın verilerini
 saklayan bilgisayardır. Miner'ın aksine GPU gerekmez.
 
-Rehber iki bölümden oluşur:
+Rehber üç bölümden oluşur:
 
-- **Hazırlık ve başvuru (1-10. adımlar):** Sunucu, gerekli programlar, paketin kontrolü,
+- **Hazırlık (1-13. adımlar):** Sunucuya bağlanma, gerekli programlar, paketin kontrolü,
   validatör hesabının oluşturulması ve FLOP'a gönderilecek bilgiler. Bu adımların hepsini
-  kendimiz denedik.
-- **Onaydan sonra (11-13. adımlar):** FLOP'un özel ağına katılma, ağa kayıt ve aktif olma. Bu
+  sıfırdan kurulmuş bir sunucuda kendimiz denedik. Her adımın altında gerçek çıktısı var.
+- **Başvuru (14. adım):** İlgi formu ve GitHub'daki başvuru sayfası.
+- **Onaydan sonra (15-17. adımlar):** FLOP'un özel ağına katılma, ağa kayıt ve aktif olma. Bu
   adımlar FLOP'un onayını gerektirdiği için henüz denenemedi ve FLOP'un kendi belgesinden
   özetlendi.
 
@@ -62,48 +63,63 @@ GPU'nuz varsa miner da kurabilirsiniz. Miner için onay gerekmez:
 | Disk | 4 TB NVMe. Testnet sayfasına göre en az 2 TB |
 | İnternet | 1 Gbps, kesintisiz |
 | İşletim sistemi | Linux amd64 (Ubuntu 22.04 veya 24.04) |
-| Programlar | Docker ve Docker Compose, Node.js 24, pnpm 12.14.0, curl, jq, Tailscale, age |
 
 FLOP bu değerlerin ölçülmüş devnet alt sınırları olmadığını, planlama tahminleri olduğunu
 söylüyor.
 
-Hazırlık adımları çok daha küçük bir makinede de çalışır. Biz 9 çekirdek, 49 GB RAM ve 126 GB
+Hazırlık adımları çok daha küçük bir makinede de çalışır. Biz 11 çekirdek, 12 GB RAM ve 126 GB
 diskli bir sunucuda denedik. Ama FLOP'un onaydan sonra göndereceği giriş anahtarı, bilgilerini
 gönderdiğiniz sunucunun SSH anahtarıyla şifrelenir ve sadece o sunucuda açılır. Bu yüzden
 hazırlığı validatörü gerçekten çalıştıracağınız sunucuda yapın.
 
 > [!TIP]
-> Sunucunuz yoksa şimdilik sadece 1. adımı yapın. Sunucuyu FLOP'tan haber gelince kiralayın.
+> Sunucunuz yoksa şimdilik sadece 14. adımdaki ilgi formunu doldurun. Sunucuyu FLOP'tan haber
+> gelince kiralayın.
 
 ---
 
-## 1. İlgi Formunu Doldurma
+## 1. Sunucuya Bağlanma
 
-Bu adım için sunucu gerekmez.
-
-1. https://flop.finance/apply/validator adresini açın. Adres sizi FLOP'un "FLOP Validator
-   Interest Form" adlı Google formuna götürür.
-2. E-posta, isim, bölge ve Telegram gibi bilgileri doldurun.
-3. Kurulum türü olarak **Self-hosted** (kendi sunucunuz), zaman olarak **Testnet** seçin ve kaç
-   validatör çalıştıracağınızı yazın.
-4. Formu gönderin.
-
-Form sizi FLOP'un ilgi listesine ekler, onay vermez.
-
----
-
-## 2. Sunucuya Bağlanma
-
-Sunucunuza kendi bilgisayarınızdan SSH ile bağlanın:
+Kendi bilgisayarınızın terminalinden sunucunuza bağlanın:
 
 ```bash
 ssh root@SUNUCU_IP
 ```
 
+- `SUNUCU_IP` yerine sunucunuzun IP adresini yazın. Sunucunuz farklı bir SSH portu kullanıyorsa
+  komut `ssh -p PORT root@SUNUCU_IP` şeklinde olur.
+- İlk bağlantıda `Are you sure you want to continue connecting (yes/no/[fingerprint])?` sorusu
+  çıkar. `yes` yazıp Enter'a basın.
 - Windows kullanıyorsanız önce WSL kurulum rehberimi takip edin:
   https://x.com/UfukDegen/status/1944066889346429338
 - Bundan sonraki bütün komutlar sunucuda, `root` kullanıcısıyla çalıştırılır. Sunucuya normal
   bir kullanıcıyla bağlandıysanız önce `sudo -i` yazın.
+
+Örnek çıktı:
+
+![Sunucuya bağlanma](assets/01-ssh.png)
+
+---
+
+## 2. Sistemi Güncelleme ve Gerekli Paketler
+
+```bash
+apt update && apt upgrade -y
+```
+
+```bash
+apt install -y curl jq age xz-utils
+```
+
+- Güncelleme birkaç dakika sürebilir.
+- Ekranda hangi servislerin yeniden başlatılacağını soran mor bir pencere çıkarsa Enter'a basın.
+- Güncelleme çekirdeği (kernel) de yenilerse, sonraki girişte `*** System restart required ***`
+  yazısını görürsünüz. Hazırlık adımları için yeniden başlatmak gerekmez. İsterseniz `reboot`
+  yazıp birkaç dakika sonra tekrar bağlanabilirsiniz.
+
+Örnek çıktı:
+
+![Sistemi güncelleme](assets/02-update.png)
 
 ---
 
@@ -119,32 +135,36 @@ hostname
 - `validator-ismi-girin` yerine küçük harf, rakam ve tireden oluşan, size özel bir isim yazın.
 - Son komut yeni ismi yazmalıdır.
 
+Örnek çıktı:
+
+![Sunucuya isim verme](assets/03-hostname.png)
+
 ---
 
-## 4. Gerekli Programları Kurma
+## 4. Docker Kurulumu
 
-### Docker
-
-```bash
-docker --version && docker compose version
-```
-
-İki sürüm numarası görmelisiniz. Docker yoksa Docker'ın resmi kurulum betiğiyle kurun:
+Yeni sunucuların çoğunda Docker kurulu gelmez. Docker'ın resmi kurulum betiğiyle kurun:
 
 ```bash
 curl -fsSL https://get.docker.com | sh
 ```
 
-> [!NOTE]
-> Testteki sunucuda Docker hazır geliyordu. Bu yüzden Docker kurulumunu biz denemedik.
-
-### Küçük araçlar
+Kurulumu kontrol edin:
 
 ```bash
-apt-get update && apt-get install -y curl jq age xz-utils
+docker --version && docker compose version
 ```
 
-### Node.js 24 ve pnpm
+İki sürüm numarası görmelisiniz. Docker sunucunuzda zaten kuruluysa kurulum komutunu atlayıp
+sadece kontrol komutunu çalıştırın.
+
+Örnek çıktı:
+
+![Docker kurulumu](assets/04-docker.png)
+
+---
+
+## 5. Node.js 24 ve pnpm Kurulumu
 
 İndirilen dosya, Node.js'in kendi özet listesiyle doğrulanır:
 
@@ -162,7 +182,13 @@ corepack enable
 `...linux-x64.tar.xz: OK` satırını ve `v24` ile başlayan bir sürüm görmelisiniz. `corepack`,
 paketin istediği pnpm sürümünü (12.14.0) ilk kullanımda kendisi indirir.
 
-### Tailscale
+Örnek çıktı:
+
+![Node.js kurulumu](assets/05-node.png)
+
+---
+
+## 6. Tailscale Kurulumu
 
 Tailscale kurulur ama giriş yapılmaz:
 
@@ -170,19 +196,25 @@ Tailscale kurulur ama giriş yapılmaz:
 . /etc/os-release
 curl -fsSL "https://pkgs.tailscale.com/stable/ubuntu/$VERSION_CODENAME.noarmor.gpg" -o /usr/share/keyrings/tailscale-archive-keyring.gpg
 curl -fsSL "https://pkgs.tailscale.com/stable/ubuntu/$VERSION_CODENAME.tailscale-keyring.list" -o /etc/apt/sources.list.d/tailscale.list
-apt-get update && apt-get install -y tailscale
+apt update && apt install -y tailscale
 tailscale status
 ```
 
 Son komut `Logged out.` yazmalıdır.
 
+Örnek çıktı:
+
+![Tailscale kurulumu](assets/06-tailscale.png)
+
 > [!CAUTION]
 > `tailscale up` veya `tailscale login` komutlarını çalıştırmayın. Sunucunuzu FLOP'un özel
 > ağına, onaydan sonra FLOP'un göndereceği tek kullanımlık anahtar ekler.
 
-### cosign (önerilir)
+---
 
-FLOP'un Docker imajlarının imzasını 6. adımda bu araçla doğrulayacağız:
+## 7. cosign Kurulumu
+
+FLOP'un Docker imajlarının imzasını 9. adımda bu araçla doğrulayacağız:
 
 ```bash
 cd /tmp
@@ -193,9 +225,13 @@ install -m 755 cosign-linux-amd64 /usr/local/bin/cosign
 
 `cosign-linux-amd64: OK` görmelisiniz.
 
+Örnek çıktı:
+
+![cosign kurulumu](assets/07-cosign.png)
+
 ---
 
-## 5. Paketi İndirme ve Doğrulama
+## 8. Paketi İndirme ve Doğrulama
 
 ```bash
 mkdir -p /opt/flop-validator && cd /opt/flop-validator
@@ -208,23 +244,19 @@ node preflight.mjs
 ```
 
 - Uzun değer, FLOP'un validatör belgesinde yayınlanan paket özetidir.
-- Beklenen çıktı:
+- Sırasıyla `OK`, `26` (26 dosyanın hepsi doğru) ve son satırda `verified` görmelisiniz.
+- `finalized` ve `peers` sayıları sizde farklı olur.
 
-```text
-validator-cs-be91fe83-0.3.0-devnet.1.tar.gz: OK
-26
-{"genesis":"0x99c172c095340ace980631f9123544c6bebd4839f3437e463533422d8be2d631","finalized":3127929,"peers":11}
-validator-cs-be91fe83 validator preflight: verified
-```
+Örnek çıktı:
 
-- `finalized` ve `peers` sayıları sizde farklı olur. Son satırda `verified` yazmalıdır.
+![Paketi indirme ve doğrulama](assets/08-package.png)
 
 > [!NOTE]
 > Explorer'daki eski `0.2.0-devnet.1` linki çalışmıyor (404). Güncel paket `0.3.0-devnet.1`.
 
 ---
 
-## 6. İmzaları Doğrulama (Önerilir)
+## 9. İmzaları Doğrulama
 
 Bu komut, paketin kullanacağı iki Docker imajının gerçekten FLOP'un GitHub'ında üretildiğini
 doğrular:
@@ -234,15 +266,19 @@ WF=https://github.com/flop-labs/flop-core/.github/workflows/build-services.yml@r
 for IMG in \
   ghcr.io/flop-labs/flop-core/node-devnet@sha256:84498fd73db2464eb13088ab34d369ddf7cddd22a45c810d140c9ff8ec16c91d \
   ghcr.io/flop-labs/flop-core/da-validator@sha256:c6709bb5bba04978a7800daccd87bb2bf916edd34d7dbf09f84aba5be9aca949; do
-  if cosign verify "$IMG" --certificate-oidc-issuer https://token.actions.githubusercontent.com --certificate-identity "$WF" >/dev/null 2>&1; then echo "imza OK: ${IMG%%@*}"; else echo "imza HATALI: ${IMG%%@*}"; fi
+  if cosign verify "$IMG" --certificate-oidc-issuer https://token.actions.githubusercontent.com --certificate-identity "$WF" >/dev/null 2>&1; then echo "OK: ${IMG%%@*}"; else echo "FAILED: ${IMG%%@*}"; fi
 done
 ```
 
-İki satırda da `imza OK` görmelisiniz. `imza HATALI` görürseniz devam etmeyin.
+İki satırda da `OK` görmelisiniz. `FAILED` görürseniz devam etmeyin.
+
+Örnek çıktı:
+
+![İmzaları doğrulama](assets/09-signatures.png)
 
 ---
 
-## 7. Bağımlılıkları Kurma
+## 10. Bağımlılıkları Kurma
 
 ```bash
 cd /opt/flop-validator/validator-cs-be91fe83
@@ -251,34 +287,30 @@ pnpm --version
 pnpm install --frozen-lockfile --ignore-scripts
 ```
 
-`12.14.0` sürümünü ve sonunda `Done in ...` satırını görmelisiniz. Testte bu adım 2 saniye
-sürdü.
+`12.14.0` sürümünü ve sonunda `Done in ...` satırını görmelisiniz. Ekranda `Update available!`
+yazısı çıkarsa pnpm'i güncellemeyin. Paket 12.14.0 sürümüyle çalışacak şekilde hazırlanmış.
+
+Örnek çıktı:
+
+![Bağımlılıkları kurma](assets/10-pnpm.png)
 
 ---
 
-## 8. Validatör Hesabını Oluşturma
+## 11. Validatör Hesabını Oluşturma
 
 ```bash
 pnpm onboard prepare
 ```
 
-Bu komut FLOP'un node imajını (233 MB) indirir ve validatör hesabınızı oluşturur. Testte 12
-saniye sürdü. Beklenen çıktı:
-
-```text
-$ node onboard.mjs prepare
-Hostname: validator-ismi-girin
-Public SS58 address: 5...
-Send these two public values to operations. Keep account.json and .env private.
-```
+Bu komut FLOP'un node imajını (233 MB) indirir ve validatör hesabınızı oluşturur.
 
 - `Hostname`, 3. adımda verdiğiniz isimdir.
 - `Public SS58 address`, validatör hesabınızın adresidir ve `5` ile başlar. Bu adres gizli
   değildir.
-- Komut "iki bilgi" dese de FLOP'un güncel belgesi, 9. adımdaki SSH anahtarıyla birlikte üç
+- Komut "iki bilgi" dese de FLOP'un güncel belgesi, 13. adımdaki SSH anahtarıyla birlikte üç
   bilgi istiyor.
 
-Komut klasörde iki dosya oluşturur:
+Komutun oluşturduğu iki dosyayı kontrol edin:
 
 ```bash
 ls -la account.json .env
@@ -286,24 +318,48 @@ ls -la account.json .env
 
 İkisi de `-rw-------` izniyle görünmelidir.
 
+Örnek çıktı:
+
+![Validatör hesabını oluşturma](assets/11-prepare.png)
+
 > [!CAUTION]
 > `account.json` ve `.env` validatör hesabınızın gizli anahtarını içerir. Kimseye göndermeyin,
 > ekran görüntüsünü almayın ve GitHub'a yüklemeyin. FLOP da bu dosyaları istemez.
 
-Bu iki dosyanın yedeğini kendi bilgisayarınıza alın. Aşağıdaki komutları sunucuda değil,
-**kendi bilgisayarınızın terminalinde** çalıştırın:
+---
+
+## 12. Yedek Alma
+
+Bu iki dosyanın yedeğini kendi bilgisayarınıza alın. Önce sunucudan çıkın:
 
 ```bash
-mkdir -p ~/FLOP-Validator-Yedek && chmod 700 ~/FLOP-Validator-Yedek
-scp root@SUNUCU_IP:/opt/flop-validator/validator-cs-be91fe83/account.json ~/FLOP-Validator-Yedek/
-scp root@SUNUCU_IP:/opt/flop-validator/validator-cs-be91fe83/.env ~/FLOP-Validator-Yedek/
+exit
+```
+
+Aşağıdaki komutları **kendi bilgisayarınızın terminalinde** çalıştırın:
+
+```bash
+mkdir -p ~/flop-validator-backup && chmod 700 ~/flop-validator-backup
+scp root@SUNUCU_IP:/opt/flop-validator/validator-cs-be91fe83/account.json ~/flop-validator-backup/
+scp root@SUNUCU_IP:/opt/flop-validator/validator-cs-be91fe83/.env ~/flop-validator-backup/
 ```
 
 - Sunucunuz farklı bir SSH portu kullanıyorsa `scp` kelimesinden sonra `-P PORT` ekleyin.
+- İki dosya için de `100%` görmelisiniz.
+
+Ardından sunucuya tekrar bağlanın:
+
+```bash
+ssh root@SUNUCU_IP
+```
+
+Örnek çıktı:
+
+![Yedek alma](assets/12-backup.png)
 
 ---
 
-## 9. FLOP'a Gönderilecek Bilgileri Hazırlama
+## 13. FLOP'a Gönderilecek Bilgileri Alma
 
 FLOP üç bilgi istiyor. Üçü de gizli değildir:
 
@@ -324,6 +380,10 @@ Son komutun yazdığı `SHA256:` ile başlayan değer, anahtarın parmak izidir.
 iletişime geçtiğinde bu değeri ikinci bir kanaldan, örneğin e-posta veya görüşmeyle teyit
 etmenizi ister.
 
+Örnek çıktı:
+
+![FLOP'a gönderilecek bilgiler](assets/13-details.png)
+
 > [!CAUTION]
 > Sonu `.pub` olan dosya açık anahtardır ve paylaşılabilir. Sonunda `.pub` olmayan
 > `/etc/ssh/ssh_host_ed25519_key` dosyası ise sunucunuzun gizli anahtarıdır. Onu asla
@@ -331,11 +391,26 @@ etmenizi ister.
 
 ---
 
-## 10. Başvuru
+## 14. Başvuru
+
+### İlgi formu
+
+Bu adım için sunucu gerekmez.
+
+1. https://flop.finance/apply/validator adresini açın. Adres sizi FLOP'un "FLOP Validator
+   Interest Form" adlı Google formuna götürür.
+2. E-posta, isim, bölge ve Telegram gibi bilgileri doldurun.
+3. Kurulum türü olarak **Self-hosted** (kendi sunucunuz), zaman olarak **Testnet** seçin ve kaç
+   validatör çalıştıracağınızı yazın.
+4. Formu gönderin.
+
+Form sizi FLOP'un ilgi listesine ekler, onay vermez.
+
+### GitHub'daki başvuru sayfası
 
 FLOP'un belgesine göre:
 
-- **FLOP ekibinden biriyle zaten konuşuyorsanız** bu üç bilgiyi ona gönderin.
+- **FLOP ekibinden biriyle zaten konuşuyorsanız** 13. adımdaki üç bilgiyi ona gönderin.
 - **Kimseyle iletişiminiz yoksa** GitHub'daki [#10](https://github.com/flop-labs/network/issues/10)
   sayfasına yorum yazarak tanıştırılma isteyin. FLOP'un validatör sayfasındaki "Availability and
   access updates" bağlantısı da bu sayfaya gider.
@@ -379,7 +454,7 @@ yapabilirsiniz.
 > Bu bölüm FLOP'un paketindeki `README.md` dosyasından özetlendi. FLOP onay vermediği için
 > henüz denenemedi. FLOP size farklı bir talimat verirse onun talimatına uyun.
 
-### 11. FLOP'un Gönderdiklerini Kurma
+### 15. FLOP'un Gönderdiklerini Kurma
 
 Onaydan sonra FLOP size şunları gönderir:
 
@@ -401,7 +476,7 @@ Yapılacaklar:
 3. `da-peers.json` dosyasını paket klasörüne, `README.md` dosyasının yanına kaydedin.
 4. FLOP'un erişim kontrollerini yaptığını size bildirmesini bekleyin.
 
-### 12. Ağa Katılma
+### 16. Ağa Katılma
 
 ```bash
 cd /opt/flop-validator/validator-cs-be91fe83
@@ -422,7 +497,7 @@ Ardından FLOP'a "ready" yazın.
 > `join` yarıda kalırsa komutu tekrar tekrar çalıştırmayın. Klasördeki dosyaları ve
 > `.join-attempt` dosyasını silmeyin, FLOP ile iletişime geçin.
 
-### 13. Aktif Olma ve Kontrol
+### 17. Aktif Olma ve Kontrol
 
 FLOP kaydınızı kontrol edip validatörünüzü aktif eder. Bu, iki oturum (session) değişimi
 kadar sürebilir. FLOP aktif olduğunuzu bildirdikten sonra kontrol edin:
@@ -448,7 +523,7 @@ bu normaldir. Hiçbir program başlamaz ve hiçbir işlem imzalanmaz. Testte de 
 
 ### `Receive da-peers.json from operations before joining`
 
-FLOP'un gönderdiği `da-peers.json` dosyası paket klasöründe değil. 11. adımı uygulayın.
+FLOP'un gönderdiği `da-peers.json` dosyası paket klasöründe değil. 15. adımı uygulayın.
 
 ### `Existing .env has signing material; preserve it and reconcile the account locally`
 
@@ -459,9 +534,13 @@ dosyasını yedeğinizden geri koyun.
 
 `account.json` ve `.env` farklı hesaplara ait. İkisini de aynı yedekten geri koyun.
 
+### `docker: command not found`
+
+Docker kurulu değil. 4. adımı uygulayın.
+
 ### Explorer'daki paket linki `404` veriyor
 
-Eski `0.2.0-devnet.1` linkini kullanıyorsunuz. 5. adımdaki `0.3.0-devnet.1` linkini kullanın.
+Eski `0.2.0-devnet.1` linkini kullanıyorsunuz. 8. adımdaki `0.3.0-devnet.1` linkini kullanın.
 
 ---
 
@@ -534,28 +613,30 @@ yazıyor.
 
 ## Test Notları
 
-Hazırlık adımları 7 Kasım 2026'da Vast.ai üzerindeki bir sunucuda denendi:
+Bu rehberdeki 1-13. adımlar 8 Kasım 2026'da kiralık, sıfırdan kurulmuş bir sunucuda baştan sona
+denendi. Görsellerdeki çıktılar bu denemeden alındı:
 
 | Test | Sonuç |
 | --- | --- |
-| Sunucu | Ubuntu 22.04 VM (amd64), 9 çekirdek, 49 GB RAM, 126 GB disk |
-| Docker | 28.1.1 ve Compose v2.35.1 (sunucuda hazırdı) |
+| Sunucu | Ubuntu 22.04 (amd64), 11 çekirdek, 12 GB RAM, 126 GB disk |
+| Sistem güncellemesi | 315 paket güncellendi |
+| Docker | Resmi betikle kuruldu: Docker 29.9.3, Compose v5.7.0 |
 | Node.js | 24.22.2, özet listesiyle doğrulandı |
-| pnpm | 12.14.0 (corepack ile) |
 | Tailscale | 1.104.5, oturum kapalı |
-| age | 1.0.0 |
 | cosign | v3.1.4, özeti doğrulandı |
 | Paket özeti | Belgedeki değerle eşleşti |
 | Paket dosyaları | 26 dosyanın 26'sı doğru |
-| Preflight | `verified`, 11 bağlantı (peer) |
-| İmajların imzası | `node-devnet` ve `da-validator`: ikisi de doğru |
-| `pnpm install` | 1,6 saniye |
-| `pnpm onboard prepare` | 12 saniye, node imajı 233 MB |
-| `pnpm onboard join` | `tailscale failed; no signing material was printed` ile durdu. Hiçbir program başlamadı, kayıt yapılmadı. FLOP'un onayı olmadan beklenen sonuç |
+| Preflight | `verified`, 10 bağlantı (peer) |
+| İmajların imzası | `node-devnet` ve `da-validator`: ikisi de `OK` |
+| pnpm | 12.14.0, `pnpm install` 1,3 saniye |
+| `pnpm onboard prepare` | Hesap oluşturuldu, iki dosya da `-rw-------` |
+| Yedek | `account.json` ve `.env` kendi bilgisayara kopyalandı |
+| `pnpm onboard join` | 7 Kasım'daki ilk denemede `tailscale failed; no signing material was printed` ile durdu. Hiçbir program başlamadı, kayıt yapılmadı. FLOP'un onayı olmadan beklenen sonuç |
 | Onay, katılma ve aktif olma | FLOP onay vermediği için denenemedi |
 
-8 Kasım 2026'da tekrar kontrol edildi: paket, FLOP'un belgesi (son güncelleme 6 Kasım) ve kabul
-yöntemi aynı. Ağda FLOP'un 10 validatörü aktif, sırada 1 validatör bekliyor.
+Hazırlık adımları 7 Kasım 2026'da başka bir Ubuntu 22.04 sunucuda da denenmişti, sonuç aynıydı.
+8 Kasım 2026'da FLOP tarafı da tekrar kontrol edildi: paket, FLOP'un belgesi (son güncelleme
+6 Kasım) ve kabul yöntemi aynı. Ağda FLOP'un 10 validatörü aktif, sırada 1 validatör bekliyor.
 
 ---
 

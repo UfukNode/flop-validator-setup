@@ -12,18 +12,19 @@
 > thread on GitHub, and FLOP has not answered any of them yet. Do not rent a big server before
 > you are admitted.
 
-This guide is for anyone who wants to prepare a server and apply to run a validator on the FLOP
-Devnet.
+This guide is for anyone who wants to prepare a server from scratch and apply to run a validator
+on the FLOP Devnet.
 
 A validator is the machine that produces blocks on the FLOP network, votes to finalize them and
 stores the network's data. Unlike a miner, it needs no GPU.
 
-The guide has two parts:
+The guide has three parts:
 
-- **Preparation and application (steps 1-10):** the server, the required programs, the package
+- **Preparation (steps 1-13):** connecting to the server, the required programs, the package
   checks, creating the validator account and the details you send to FLOP. We tested every one
-  of these steps ourselves.
-- **After admission (steps 11-13):** joining FLOP's private network, registering and becoming
+  of these steps ourselves on a freshly installed server. Each step shows its real output.
+- **Application (step 14):** the interest form and the application thread on GitHub.
+- **After admission (steps 15-17):** joining FLOP's private network, registering and becoming
   active. These steps need FLOP's approval, so they have not been tested yet. They are
   summarized from FLOP's own documentation.
 
@@ -63,48 +64,62 @@ If you have a GPU, you can also run a miner, which needs no approval:
 | Disk | 4 TB NVMe. The testnet page says 2 TB at least |
 | Network | 1 Gbps, reliable |
 | Operating system | Linux amd64 (Ubuntu 22.04 or 24.04) |
-| Programs | Docker and Docker Compose, Node.js 24, pnpm 12.14.0, curl, jq, Tailscale, age |
 
 FLOP says these values are planning estimates, not measured devnet minimums.
 
-The preparation steps also run on a much smaller machine. We tested them on a server with 9
-cores, 49 GB of RAM and a 126 GB disk. But the enrollment key FLOP sends after admission is
+The preparation steps also run on a much smaller machine. We tested them on a server with 11
+cores, 12 GB of RAM and a 126 GB disk. But the enrollment key FLOP sends after admission is
 encrypted to the SSH key of the server whose details you sent, and it only opens on that server.
 So do the preparation on the server that will really run your validator.
 
 > [!TIP]
-> If you do not have a server yet, only do step 1 for now. Rent the server when you hear back
-> from FLOP.
+> If you do not have a server yet, only fill in the interest form in step 14 for now. Rent the
+> server when you hear back from FLOP.
 
 ---
 
-## 1. Fill In the Interest Form
+## 1. Connect to the Server
 
-This step needs no server.
-
-1. Open https://flop.finance/apply/validator. It takes you to FLOP's Google form called "FLOP
-   Validator Interest Form".
-2. Fill in your email, name, region, Telegram and the other details.
-3. Choose **Self-hosted** as the setup type and **Testnet** as the timing, and enter how many
-   validators you plan to run.
-4. Submit the form.
-
-The form puts you on FLOP's interest list. It does not grant admission.
-
----
-
-## 2. Connect to the Server
-
-Connect to your server over SSH from your own computer:
+Connect to your server from your own computer's terminal:
 
 ```bash
 ssh root@SERVER_IP
 ```
 
+- Replace `SERVER_IP` with your server's IP address. If your server uses a different SSH port,
+  the command is `ssh -p PORT root@SERVER_IP`.
+- On the first connection you see `Are you sure you want to continue connecting
+  (yes/no/[fingerprint])?`. Type `yes` and press Enter.
 - On Windows, follow my WSL setup guide first:
   https://x.com/UfukDegen/status/1944066889346429338
 - Every command from here on runs on the server as `root`. If you logged in as a normal user,
   type `sudo -i` first.
+
+Example output:
+
+![Connect to the server](assets/01-ssh.png)
+
+---
+
+## 2. Update the System and Install the Basic Packages
+
+```bash
+apt update && apt upgrade -y
+```
+
+```bash
+apt install -y curl jq age xz-utils
+```
+
+- The update can take a few minutes.
+- If a purple window asks which services to restart, press Enter.
+- If the update also installs a new kernel, you see `*** System restart required ***` at your
+  next login. The preparation steps do not need a restart. If you want one, type `reboot` and
+  connect again after a few minutes.
+
+Example output:
+
+![Update the system](assets/02-update.png)
 
 ---
 
@@ -122,33 +137,36 @@ hostname
   hyphens.
 - The last command should print the new name.
 
+Example output:
+
+![Name the server](assets/03-hostname.png)
+
 ---
 
-## 4. Install the Required Programs
+## 4. Install Docker
 
-### Docker
-
-```bash
-docker --version && docker compose version
-```
-
-You should see two version numbers. If Docker is missing, install it with Docker's official
-script:
+Most new servers come without Docker. Install it with Docker's official script:
 
 ```bash
 curl -fsSL https://get.docker.com | sh
 ```
 
-> [!NOTE]
-> Docker came preinstalled on our test server, so we did not test the Docker installation.
-
-### Small tools
+Check the installation:
 
 ```bash
-apt-get update && apt-get install -y curl jq age xz-utils
+docker --version && docker compose version
 ```
 
-### Node.js 24 and pnpm
+You should see two version numbers. If Docker is already installed on your server, skip the
+install command and only run the check.
+
+Example output:
+
+![Install Docker](assets/04-docker.png)
+
+---
+
+## 5. Install Node.js 24 and pnpm
 
 The download is checked against Node.js's own checksum list:
 
@@ -166,7 +184,13 @@ corepack enable
 You should see a `...linux-x64.tar.xz: OK` line and a version that starts with `v24`. `corepack`
 downloads the pnpm version the package asks for (12.14.0) the first time you use it.
 
-### Tailscale
+Example output:
+
+![Install Node.js](assets/05-node.png)
+
+---
+
+## 6. Install Tailscale
 
 Tailscale is installed, but you do not log in:
 
@@ -174,19 +198,25 @@ Tailscale is installed, but you do not log in:
 . /etc/os-release
 curl -fsSL "https://pkgs.tailscale.com/stable/ubuntu/$VERSION_CODENAME.noarmor.gpg" -o /usr/share/keyrings/tailscale-archive-keyring.gpg
 curl -fsSL "https://pkgs.tailscale.com/stable/ubuntu/$VERSION_CODENAME.tailscale-keyring.list" -o /etc/apt/sources.list.d/tailscale.list
-apt-get update && apt-get install -y tailscale
+apt update && apt install -y tailscale
 tailscale status
 ```
 
 The last command should print `Logged out.`
 
+Example output:
+
+![Install Tailscale](assets/06-tailscale.png)
+
 > [!CAUTION]
 > Do not run `tailscale up` or `tailscale login`. Your server joins FLOP's private network with
 > the single-use key FLOP sends after admission.
 
-### cosign (recommended)
+---
 
-We use this tool in step 6 to check the signatures of FLOP's Docker images:
+## 7. Install cosign
+
+We use this tool in step 9 to check the signatures of FLOP's Docker images:
 
 ```bash
 cd /tmp
@@ -197,9 +227,13 @@ install -m 755 cosign-linux-amd64 /usr/local/bin/cosign
 
 You should see `cosign-linux-amd64: OK`.
 
+Example output:
+
+![Install cosign](assets/07-cosign.png)
+
 ---
 
-## 5. Download and Check the Package
+## 8. Download and Check the Package
 
 ```bash
 mkdir -p /opt/flop-validator && cd /opt/flop-validator
@@ -212,16 +246,12 @@ node preflight.mjs
 ```
 
 - The long value is the package checksum published in FLOP's validator docs.
-- Expected output:
+- You should see `OK`, then `26` (all 26 files are correct), then `verified` on the last line.
+- Your `finalized` and `peers` numbers will differ.
 
-```text
-validator-cs-be91fe83-0.3.0-devnet.1.tar.gz: OK
-26
-{"genesis":"0x99c172c095340ace980631f9123544c6bebd4839f3437e463533422d8be2d631","finalized":3127929,"peers":11}
-validator-cs-be91fe83 validator preflight: verified
-```
+Example output:
 
-- Your `finalized` and `peers` numbers will differ. The last line must say `verified`.
+![Download and check the package](assets/08-package.png)
 
 > [!NOTE]
 > The old `0.2.0-devnet.1` link on the explorer does not work (404). The current package is
@@ -229,7 +259,7 @@ validator-cs-be91fe83 validator preflight: verified
 
 ---
 
-## 6. Check the Signatures (Recommended)
+## 9. Check the Signatures
 
 This checks that the two Docker images the package uses were really built in FLOP's GitHub:
 
@@ -238,15 +268,19 @@ WF=https://github.com/flop-labs/flop-core/.github/workflows/build-services.yml@r
 for IMG in \
   ghcr.io/flop-labs/flop-core/node-devnet@sha256:84498fd73db2464eb13088ab34d369ddf7cddd22a45c810d140c9ff8ec16c91d \
   ghcr.io/flop-labs/flop-core/da-validator@sha256:c6709bb5bba04978a7800daccd87bb2bf916edd34d7dbf09f84aba5be9aca949; do
-  if cosign verify "$IMG" --certificate-oidc-issuer https://token.actions.githubusercontent.com --certificate-identity "$WF" >/dev/null 2>&1; then echo "signature OK: ${IMG%%@*}"; else echo "signature FAILED: ${IMG%%@*}"; fi
+  if cosign verify "$IMG" --certificate-oidc-issuer https://token.actions.githubusercontent.com --certificate-identity "$WF" >/dev/null 2>&1; then echo "OK: ${IMG%%@*}"; else echo "FAILED: ${IMG%%@*}"; fi
 done
 ```
 
-Both lines should say `signature OK`. If you see `signature FAILED`, stop.
+Both lines should say `OK`. If you see `FAILED`, stop.
+
+Example output:
+
+![Check the signatures](assets/09-signatures.png)
 
 ---
 
-## 7. Install the Dependencies
+## 10. Install the Dependencies
 
 ```bash
 cd /opt/flop-validator/validator-cs-be91fe83
@@ -255,33 +289,30 @@ pnpm --version
 pnpm install --frozen-lockfile --ignore-scripts
 ```
 
-You should see `12.14.0` and a `Done in ...` line at the end. In our test this took 2 seconds.
+You should see `12.14.0` and a `Done in ...` line at the end. If you see `Update available!`, do
+not update pnpm. The package is made to run with version 12.14.0.
+
+Example output:
+
+![Install the dependencies](assets/10-pnpm.png)
 
 ---
 
-## 8. Create the Validator Account
+## 11. Create the Validator Account
 
 ```bash
 pnpm onboard prepare
 ```
 
-This downloads FLOP's node image (233 MB) and creates your validator account. In our test it
-took 12 seconds. Expected output:
-
-```text
-$ node onboard.mjs prepare
-Hostname: your-validator-name
-Public SS58 address: 5...
-Send these two public values to operations. Keep account.json and .env private.
-```
+This downloads FLOP's node image (233 MB) and creates your validator account.
 
 - `Hostname` is the name you set in step 3.
 - `Public SS58 address` is your validator account's address and starts with `5`. It is not a
   secret.
 - The command says "two public values", but FLOP's current docs ask for three, including the SSH
-  key from step 9.
+  key from step 13.
 
-The command creates two files in the folder:
+Check the two files the command created:
 
 ```bash
 ls -la account.json .env
@@ -289,25 +320,49 @@ ls -la account.json .env
 
 Both should show `-rw-------` permissions.
 
+Example output:
+
+![Create the validator account](assets/11-prepare.png)
+
 > [!CAUTION]
 > `account.json` and `.env` hold your validator account's secret key. Never send them to
 > anyone, never take screenshots of them and never upload them to GitHub. FLOP never asks for
 > these files.
 
-Back up both files to your own computer. Run these commands **in your own computer's
-terminal**, not on the server:
+---
+
+## 12. Back Up the Account
+
+Back up both files to your own computer. First leave the server:
 
 ```bash
-mkdir -p ~/FLOP-Validator-Backup && chmod 700 ~/FLOP-Validator-Backup
-scp root@SERVER_IP:/opt/flop-validator/validator-cs-be91fe83/account.json ~/FLOP-Validator-Backup/
-scp root@SERVER_IP:/opt/flop-validator/validator-cs-be91fe83/.env ~/FLOP-Validator-Backup/
+exit
+```
+
+Run these commands **in your own computer's terminal**:
+
+```bash
+mkdir -p ~/flop-validator-backup && chmod 700 ~/flop-validator-backup
+scp root@SERVER_IP:/opt/flop-validator/validator-cs-be91fe83/account.json ~/flop-validator-backup/
+scp root@SERVER_IP:/opt/flop-validator/validator-cs-be91fe83/.env ~/flop-validator-backup/
 ```
 
 - If your server uses a different SSH port, add `-P PORT` right after `scp`.
+- You should see `100%` for both files.
+
+Then connect to the server again:
+
+```bash
+ssh root@SERVER_IP
+```
+
+Example output:
+
+![Back up the account](assets/12-backup.png)
 
 ---
 
-## 9. Collect the Details for FLOP
+## 13. Collect the Details for FLOP
 
 FLOP asks for three details. None of them is a secret:
 
@@ -327,17 +382,37 @@ ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub
 The value starting with `SHA256:` from the last command is the key's fingerprint. When FLOP
 contacts you, it will ask you to confirm it on a second channel, such as email or a call.
 
+Example output:
+
+![The details for FLOP](assets/13-details.png)
+
 > [!CAUTION]
 > The file ending in `.pub` is the public key and is safe to share. The file
 > `/etc/ssh/ssh_host_ed25519_key`, without `.pub`, is your server's private key. Never share it.
 
 ---
 
-## 10. Apply
+## 14. Apply
+
+### Interest form
+
+This step needs no server.
+
+1. Open https://flop.finance/apply/validator. It takes you to FLOP's Google form called "FLOP
+   Validator Interest Form".
+2. Fill in your email, name, region, Telegram and the other details.
+3. Choose **Self-hosted** as the setup type and **Testnet** as the timing, and enter how many
+   validators you plan to run.
+4. Submit the form.
+
+The form puts you on FLOP's interest list. It does not grant admission.
+
+### The application thread on GitHub
 
 FLOP's docs say:
 
-- **If you are already talking to someone on the FLOP team,** send these three details to them.
+- **If you are already talking to someone on the FLOP team,** send them the three details from
+  step 13.
 - **If you have no contact,** ask for an introduction with a comment in
   [#10](https://github.com/flop-labs/network/issues/10) on GitHub. The "Availability and access
   updates" link on FLOP's validator page also points there.
@@ -379,7 +454,7 @@ too.
 > This part is summarized from the `README.md` in FLOP's package. It has not been tested because
 > FLOP has not admitted us yet. If FLOP gives you different instructions, follow theirs.
 
-### 11. Set Up What FLOP Sends
+### 15. Set Up What FLOP Sends
 
 After admission, FLOP sends you:
 
@@ -401,7 +476,7 @@ Then:
 3. Save `da-peers.json` in the package folder, next to `README.md`.
 4. Wait for FLOP to tell you its access checks are done.
 
-### 12. Join the Network
+### 16. Join the Network
 
 ```bash
 cd /opt/flop-validator/validator-cs-be91fe83
@@ -422,7 +497,7 @@ Then tell FLOP "ready".
 > If `join` stops halfway, do not run it again and again. Do not delete the files in the folder
 > or the `.join-attempt` file, and contact FLOP.
 
-### 13. Activation and Check
+### 17. Activation and Check
 
 FLOP reviews your registration and activates your validator. This can take two session
 changes. After FLOP tells you that you are active, check it:
@@ -448,7 +523,7 @@ normal before admission. Nothing starts and nothing is signed. It happened in ou
 
 ### `Receive da-peers.json from operations before joining`
 
-The `da-peers.json` file from FLOP is not in the package folder. Follow step 11.
+The `da-peers.json` file from FLOP is not in the package folder. Follow step 15.
 
 ### `Existing .env has signing material; preserve it and reconcile the account locally`
 
@@ -459,9 +534,13 @@ your backup.
 
 `account.json` and `.env` belong to different accounts. Put both back from the same backup.
 
+### `docker: command not found`
+
+Docker is not installed. Follow step 4.
+
 ### The package link on the explorer returns `404`
 
-You are using the old `0.2.0-devnet.1` link. Use the `0.3.0-devnet.1` link from step 5.
+You are using the old `0.2.0-devnet.1` link. Use the `0.3.0-devnet.1` link from step 8.
 
 ---
 
@@ -533,29 +612,31 @@ join the testnet.
 
 ## Test Notes
 
-The preparation steps were tested on 7 November 2026 on a server on Vast.ai:
+Steps 1-13 of this guide were tested end to end on 8 November 2026 on a rented, freshly installed
+server. The outputs in the pictures come from that run:
 
 | Test | Result |
 | --- | --- |
-| Server | Ubuntu 22.04 VM (amd64), 9 cores, 49 GB RAM, 126 GB disk |
-| Docker | 28.1.1 and Compose v2.35.1 (preinstalled) |
+| Server | Ubuntu 22.04 (amd64), 11 cores, 12 GB RAM, 126 GB disk |
+| System update | 315 packages upgraded |
+| Docker | Installed with the official script: Docker 29.9.3, Compose v5.7.0 |
 | Node.js | 24.22.2, checked against the checksum list |
-| pnpm | 12.14.0 (through corepack) |
 | Tailscale | 1.104.5, logged out |
-| age | 1.0.0 |
 | cosign | v3.1.4, checksum verified |
 | Package checksum | Matched the docs |
 | Package files | 26 of 26 correct |
-| Preflight | `verified`, 11 peers |
-| Image signatures | `node-devnet` and `da-validator`: both correct |
-| `pnpm install` | 1.6 seconds |
-| `pnpm onboard prepare` | 12 seconds, node image 233 MB |
-| `pnpm onboard join` | Stopped with `tailscale failed; no signing material was printed`. Nothing started and nothing was registered. This is the expected result without FLOP's approval |
+| Preflight | `verified`, 10 peers |
+| Image signatures | `node-devnet` and `da-validator`: both `OK` |
+| pnpm | 12.14.0, `pnpm install` in 1.3 seconds |
+| `pnpm onboard prepare` | Account created, both files `-rw-------` |
+| Backup | `account.json` and `.env` copied to our own computer |
+| `pnpm onboard join` | In the first test on 7 November it stopped with `tailscale failed; no signing material was printed`. Nothing started and nothing was registered. This is the expected result without FLOP's approval |
 | Admission, joining and activation | Not tested, because FLOP has not admitted us |
 
-Checked again on 8 November 2026: the package, FLOP's docs (last updated 6 November) and the
-admission process are unchanged. FLOP's 10 validators are active and 1 validator is waiting in
-the queue.
+The preparation steps were also tested on 7 November 2026 on another Ubuntu 22.04 server, with the
+same result. FLOP's side was checked again on 8 November 2026: the package, FLOP's docs (last
+updated 6 November) and the admission process are unchanged. FLOP's 10 validators are active and
+1 validator is waiting in the queue.
 
 ---
 
