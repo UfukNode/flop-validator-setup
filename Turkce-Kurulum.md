@@ -6,8 +6,7 @@
 > Bu rehber sizi validatör yapmaz, sunucunuzu hazırlayıp başvurmanızı sağlar. Devnet'te
 > validatörleri FLOP ekibi elle onaylıyor ve başvuruları hemen almıyor
 > ([FLOP'un açıklaması](https://x.com/flop_labs/status/2119121264388526205)). Onay gelmeden büyük
-> bir sunucu kiralamayın. Devnet ödül vermez. Size "onay" veya "whitelist" satmaya çalışan biri
-> dolandırıcıdır.
+> bir sunucu kiralamayın. Devnet ödül vermez.
 
 Adımlar 8 Kasım 2026'da sıfırdan kurulan bir Ubuntu 22.04 sunucuda denendi.
 
@@ -15,16 +14,19 @@ Adımlar 8 Kasım 2026'da sıfırdan kurulan bir Ubuntu 22.04 sunucuda denendi.
 
 ## Sistem Gereksinimleri
 
-| Parça | FLOP'un önerisi |
-| --- | --- |
-| İşlemci | 8 çekirdek |
-| RAM | 32 GB (testnet için 64 GB) |
-| Disk | 4 TB NVMe (testnet için en az 2 TB) |
-| İnternet | 1 Gbps |
-| İşletim sistemi | Ubuntu 22.04 veya 24.04 (amd64) |
+| Parça | Devnet ([FLOP belgesi](https://docs.flop.network/docs/run-validator)) | Testnet ([FLOP testnet sayfası](https://flop.finance/testnet/)) |
+| --- | --- | --- |
+| İşlemci | 8 ayrılmış (dedicated) çekirdek | 8+ çekirdek |
+| RAM | 32 GB | 64 GB |
+| Disk | 4 TB NVMe (DA verisi dahil) | 4 TB NVMe (en az 2 TB) |
+| İnternet | Güvenilir, düşük gecikmeli 1 Gbps | 1 Gbps, yedekli |
+| İşletim sistemi | Linux amd64 | Belirtilmemiş |
 
-GPU gerekmez. Hazırlığı validatörü çalıştıracağınız sunucuda yapın: FLOP'un onaydan sonra
-göndereceği anahtar sadece bilgilerini gönderdiğiniz sunucuda açılır.
+- FLOP devnet değerlerinin ölçülmüş alt sınır değil planlama tahmini olduğunu, testnet
+  değerlerinin de testnet açılmadan değişebileceğini söylüyor. GPU gerekmez.
+- Bu rehberdeki komutlar Ubuntu için yazıldı.
+- Hazırlığı validatörü çalıştıracağınız sunucuda yapın: FLOP'un onaydan sonra göndereceği anahtar
+  sadece bilgilerini gönderdiğiniz sunucuda açılır.
 
 ---
 

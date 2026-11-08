@@ -6,8 +6,7 @@
 > This guide does not make you a validator. It prepares your server and gets you ready to apply.
 > On devnet the FLOP team admits validators by hand and does not take applications right away
 > ([FLOP's note](https://x.com/flop_labs/status/2119121264388526205)). Do not rent a big server
-> before you are admitted. The devnet gives no rewards. Anyone who tries to sell you an
-> "approval" or a "whitelist" spot is a scammer.
+> before you are admitted. The devnet gives no rewards.
 
 These steps were tested on 8 November 2026 on a freshly installed Ubuntu 22.04 server.
 
@@ -15,16 +14,19 @@ These steps were tested on 8 November 2026 on a freshly installed Ubuntu 22.04 s
 
 ## System Requirements
 
-| Part | FLOP's recommendation |
-| --- | --- |
-| CPU | 8 cores |
-| RAM | 32 GB (64 GB for testnet) |
-| Disk | 4 TB NVMe (at least 2 TB for testnet) |
-| Network | 1 Gbps |
-| Operating system | Ubuntu 22.04 or 24.04 (amd64) |
+| Part | Devnet ([FLOP docs](https://docs.flop.network/docs/run-validator)) | Testnet ([FLOP testnet page](https://flop.finance/testnet/)) |
+| --- | --- | --- |
+| CPU | 8 dedicated cores | 8+ cores |
+| RAM | 32 GB | 64 GB |
+| Disk | 4 TB NVMe, including DA data | 4 TB NVMe (2 TB minimum) |
+| Network | Reliable, low-latency 1 Gbps | 1 Gbps, redundant |
+| Operating system | Linux amd64 | Not stated |
 
-No GPU is needed. Do the preparation on the server that will run your validator: the key FLOP
-sends after admission only opens on the server whose details you sent.
+- FLOP calls the devnet values planning estimates, not measured minimums, and says the testnet
+  values may change before the testnet opens. No GPU is needed.
+- The commands in this guide are written for Ubuntu.
+- Do the preparation on the server that will run your validator: the key FLOP sends after
+  admission only opens on the server whose details you sent.
 
 ---
 
