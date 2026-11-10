@@ -8,7 +8,9 @@
 > ([FLOP's note](https://x.com/flop_labs/status/2119121264388526205)). Do not rent a big server
 > before you are admitted. The devnet gives no rewards.
 
-These steps were tested on 8 November 2026 on a freshly installed Ubuntu 22.04 server.
+These steps were tested on 8 November 2026 on a freshly installed Ubuntu 22.04 server. On 10
+November 2026 the guide moved to package 0.4.0-devnet.1, which FLOP's docs now name, and steps 8
+and 10 were run again with it.
 
 ---
 
@@ -162,15 +164,17 @@ Example output:
 
 ```bash
 mkdir -p /opt/flop-validator && cd /opt/flop-validator
-curl -fsSLO https://explorer.devnet.flop.network/validator-downloads/validator-cs-be91fe83-0.3.0-devnet.1.tar.gz
-echo "bf98e281b7d3217fb52e9aeba75886d2165e66d32f0159dbc3f1f2e998e30ba7  validator-cs-be91fe83-0.3.0-devnet.1.tar.gz" | sha256sum -c -
-tar -xzf validator-cs-be91fe83-0.3.0-devnet.1.tar.gz
+curl -fsSLO https://explorer.devnet.flop.network/validator-downloads/validator-cs-be91fe83-0.4.0-devnet.1.tar.gz
+echo "95486a2b8c2471675a9c1b42ce0749aa8daeb11f2f9adaf5e9dee06ac085f7e5  validator-cs-be91fe83-0.4.0-devnet.1.tar.gz" | sha256sum -c -
+tar -xzf validator-cs-be91fe83-0.4.0-devnet.1.tar.gz
 cd validator-cs-be91fe83
 sha256sum -c SHA256SUMS | grep -c ': OK$'
 node preflight.mjs
 ```
 
-- You should see `OK`, then `26`, then `verified` on the last line.
+- You should see `OK`, then `34`, then `verified` on the last line.
+- If you prepared with 0.3.0-devnet.1, the three details in step 13 stay the same, so you do not
+  have to apply again.
 
 Example output:
 
@@ -285,7 +289,7 @@ Hostname: <hostname>
 Public SS58 address: <5...>
 SSH host public key (encryption recipient only): <ssh-ed25519 AAAA...>
 
-Prepared with validator-cs-be91fe83 0.3.0-devnet.1: the archive SHA-256 matches the docs,
+Prepared with validator-cs-be91fe83 0.4.0-devnet.1: the archive SHA-256 matches the docs,
 SHA256SUMS and node preflight.mjs pass, both Cosign signatures verify and pnpm onboard prepare
 is done. Tailscale is installed and logged out (Tailscale SSH will stay off) and age is
 installed. Nothing is started or registered.
@@ -302,12 +306,13 @@ This comment contains only public values.
 
 ## After Admission (Not Tested Yet)
 
-After admission, FLOP sends you a single-use Tailscale key, the stake and a `da-peers.json` file.
-According to [FLOP's docs](https://docs.flop.network/docs/run-validator):
+After admission, FLOP sends you a single-use Tailscale key, a `da-peers.json` file and the stake.
+Instead of the stake, it may send a `validator-grant.json` file. According to
+[FLOP's docs](https://docs.flop.network/docs/run-validator):
 
 1. Save the key in the package folder as `tailnet-key.age` and run the `tailscale up` command FLOP
    gives you. Then run `tailscale set --ssh=false`.
-2. Put `da-peers.json` in the package folder.
+2. Put `da-peers.json`, and `validator-grant.json` if you got one, in the package folder.
 3. When FLOP says its access checks are done:
 
    ```bash
@@ -315,9 +320,12 @@ According to [FLOP's docs](https://docs.flop.network/docs/run-validator):
    pnpm onboard join
    ```
 
-   When you see the `Ready:` line, tell FLOP "ready".
+   With `validator-grant.json`, `join` registers you through FLOP's sponsor, which holds the
+   stake. When you see the `Ready:` line, tell FLOP "ready".
 4. After FLOP tells you that you are active, check it: `pnpm onboard verify`
 
+- `pnpm onboard status` shows where you stand: queued, deferred, promoted or active.
+- Do not register the account any other way before `join`: the sponsor accepts only new accounts.
 - If you run `join` before admission, you get `tailscale failed; no signing material was
   printed`. This is normal.
 - If `join` stops halfway, do not run it again, do not delete any files, and contact FLOP.

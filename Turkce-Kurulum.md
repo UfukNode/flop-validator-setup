@@ -8,7 +8,9 @@
 > ([FLOP'un açıklaması](https://x.com/flop_labs/status/2119121264388526205)). Onay gelmeden büyük
 > bir sunucu kiralamayın. Devnet ödül vermez.
 
-Adımlar 8 Kasım 2026'da sıfırdan kurulan bir Ubuntu 22.04 sunucuda denendi.
+Adımlar 8 Kasım 2026'da sıfırdan kurulan bir Ubuntu 22.04 sunucuda denendi. Rehber 10 Kasım
+2026'da FLOP'un belgesinin artık gösterdiği 0.4.0-devnet.1 paketine geçti ve 8. ile 10. adımlar
+bu paketle tekrar çalıştırıldı.
 
 ---
 
@@ -164,15 +166,17 @@ install -m 755 cosign-linux-amd64 /usr/local/bin/cosign
 
 ```bash
 mkdir -p /opt/flop-validator && cd /opt/flop-validator
-curl -fsSLO https://explorer.devnet.flop.network/validator-downloads/validator-cs-be91fe83-0.3.0-devnet.1.tar.gz
-echo "bf98e281b7d3217fb52e9aeba75886d2165e66d32f0159dbc3f1f2e998e30ba7  validator-cs-be91fe83-0.3.0-devnet.1.tar.gz" | sha256sum -c -
-tar -xzf validator-cs-be91fe83-0.3.0-devnet.1.tar.gz
+curl -fsSLO https://explorer.devnet.flop.network/validator-downloads/validator-cs-be91fe83-0.4.0-devnet.1.tar.gz
+echo "95486a2b8c2471675a9c1b42ce0749aa8daeb11f2f9adaf5e9dee06ac085f7e5  validator-cs-be91fe83-0.4.0-devnet.1.tar.gz" | sha256sum -c -
+tar -xzf validator-cs-be91fe83-0.4.0-devnet.1.tar.gz
 cd validator-cs-be91fe83
 sha256sum -c SHA256SUMS | grep -c ': OK$'
 node preflight.mjs
 ```
 
-- Sırasıyla `OK`, `26` ve son satırda `verified` görmelisiniz.
+- Sırasıyla `OK`, `34` ve son satırda `verified` görmelisiniz.
+- Hazırlığı 0.3.0-devnet.1 ile yaptıysanız 13. adımdaki üç bilgi değişmez, yeniden başvurmanız
+  gerekmez.
 
 Örnek çıktı:
 
@@ -288,7 +292,7 @@ Hostname: <hostname>
 Public SS58 address: <5...>
 SSH host public key (encryption recipient only): <ssh-ed25519 AAAA...>
 
-Prepared with validator-cs-be91fe83 0.3.0-devnet.1: the archive SHA-256 matches the docs,
+Prepared with validator-cs-be91fe83 0.4.0-devnet.1: the archive SHA-256 matches the docs,
 SHA256SUMS and node preflight.mjs pass, both Cosign signatures verify and pnpm onboard prepare
 is done. Tailscale is installed and logged out (Tailscale SSH will stay off) and age is
 installed. Nothing is started or registered.
@@ -305,12 +309,13 @@ This comment contains only public values.
 
 ## Onaydan Sonra (Henüz Denenmedi)
 
-FLOP onay verince size tek kullanımlık bir Tailscale anahtarı, stake ve `da-peers.json` dosyası
-gönderir. [FLOP'un belgesine](https://docs.flop.network/docs/run-validator) göre:
+FLOP onay verince size tek kullanımlık bir Tailscale anahtarı, `da-peers.json` dosyası ve stake
+gönderir. Stake yerine bir `validator-grant.json` dosyası da gönderebilir.
+[FLOP'un belgesine](https://docs.flop.network/docs/run-validator) göre:
 
 1. Anahtarı paket klasörüne `tailnet-key.age` adıyla kaydedin ve FLOP'un verdiği `tailscale up`
    komutunu çalıştırın. Ardından `tailscale set --ssh=false` yazın.
-2. `da-peers.json` dosyasını paket klasörüne koyun.
+2. `da-peers.json` dosyasını, geldiyse `validator-grant.json` dosyasını da paket klasörüne koyun.
 3. FLOP erişim kontrollerini bitirdiğini söyleyince:
 
    ```bash
@@ -318,9 +323,13 @@ gönderir. [FLOP'un belgesine](https://docs.flop.network/docs/run-validator) gö
    pnpm onboard join
    ```
 
-   `Ready:` satırını görünce FLOP'a "ready" yazın.
+   `validator-grant.json` varsa `join` kaydınızı FLOP'un sponsoru üzerinden yapar, stake'i sponsor
+   tutar. `Ready:` satırını görünce FLOP'a "ready" yazın.
 4. FLOP aktif olduğunuzu bildirince kontrol edin: `pnpm onboard verify`
 
+- `pnpm onboard status` nerede olduğunuzu gösterir: sırada (queued), ertelenmiş (deferred), terfi
+  etmiş (promoted) ya da aktif (active).
+- `join` öncesinde hesabı başka bir yolla kaydetmeyin: sponsor yalnızca yeni hesapları kabul eder.
 - Onaydan önce `join` çalıştırırsanız `tailscale failed; no signing material was printed` hatası
   alırsınız, bu normaldir.
 - `join` yarıda kalırsa tekrar çalıştırmayın, dosyaları silmeyin ve FLOP'a yazın.
