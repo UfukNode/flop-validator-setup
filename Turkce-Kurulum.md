@@ -8,9 +8,9 @@
 > ([FLOP'un açıklaması](https://x.com/flop_labs/status/2119121264388526205)). Onay gelmeden büyük
 > bir sunucu kiralamayın. Devnet ödül vermez.
 
-Adımlar 8 Kasım 2026'da sıfırdan kurulan bir Ubuntu 22.04 sunucuda denendi. Rehber 10 Kasım
-2026'da FLOP'un belgesinin artık gösterdiği 0.4.0-devnet.1 paketine geçti ve 8. ile 10. adımlar
-bu paketle tekrar çalıştırıldı.
+Adımlar 8 Kasım 2026'da sıfırdan kurulan bir Ubuntu 22.04 sunucuda denendi. Rehber 13 Kasım
+2026'da FLOP'un indirme sayfasının özetiyle birlikte sunduğu 0.4.1-devnet.1 paketine geçti ve 8.
+ile 10. adımlar bu paketle tekrar çalıştırıldı.
 
 ---
 
@@ -166,17 +166,18 @@ install -m 755 cosign-linux-amd64 /usr/local/bin/cosign
 
 ```bash
 mkdir -p /opt/flop-validator && cd /opt/flop-validator
-curl -fsSLO https://explorer.devnet.flop.network/validator-downloads/validator-cs-be91fe83-0.4.0-devnet.1.tar.gz
-echo "95486a2b8c2471675a9c1b42ce0749aa8daeb11f2f9adaf5e9dee06ac085f7e5  validator-cs-be91fe83-0.4.0-devnet.1.tar.gz" | sha256sum -c -
-tar -xzf validator-cs-be91fe83-0.4.0-devnet.1.tar.gz
+curl -fsSLO https://explorer.devnet.flop.network/validator-downloads/validator-cs-be91fe83-0.4.1-devnet.1.tar.gz
+echo "715abad72f3a8c658de5f929c6fe01b03d4204b5954925331766053610f3c967  validator-cs-be91fe83-0.4.1-devnet.1.tar.gz" | sha256sum -c -
+tar -xzf validator-cs-be91fe83-0.4.1-devnet.1.tar.gz
 cd validator-cs-be91fe83
 sha256sum -c SHA256SUMS | grep -c ': OK$'
 node preflight.mjs
 ```
 
 - Sırasıyla `OK`, `34` ve son satırda `verified` görmelisiniz.
-- Hazırlığı 0.3.0-devnet.1 ile yaptıysanız 13. adımdaki üç bilgi değişmez, yeniden başvurmanız
-  gerekmez.
+- Hazırlığı 0.3.0-devnet.1 veya 0.4.0-devnet.1 ile yaptıysanız 13. adımdaki üç bilgi değişmez,
+  yeniden başvurmanız gerekmez. 0.4.1 yalnızca `onboard join` adımını düzeltir: artık WS 1006
+  hatasıyla durmak yerine düğümün RPC sunmasını beş dakikaya kadar bekler.
 
 Örnek çıktı:
 
@@ -292,7 +293,7 @@ Hostname: <hostname>
 Public SS58 address: <5...>
 SSH host public key (encryption recipient only): <ssh-ed25519 AAAA...>
 
-Prepared with validator-cs-be91fe83 0.4.0-devnet.1: the archive SHA-256 matches the docs,
+Prepared with validator-cs-be91fe83 0.4.1-devnet.1: the archive SHA-256 matches FLOP's download page,
 SHA256SUMS and node preflight.mjs pass, both Cosign signatures verify and pnpm onboard prepare
 is done. Tailscale is installed and logged out (Tailscale SSH will stay off) and age is
 installed. Nothing is started or registered.
