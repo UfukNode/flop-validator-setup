@@ -8,8 +8,9 @@ adım adım yaptırır.
 
 > [!WARNING]
 > Kayıt koltuk garantisi değildir; koltuk, sponsorluk ve aktivasyon ayrı adımlardır. Validatör
-> anahtarları ve tören paketi FLOP zincir yazılımını dondurduğunda yayınlanacak, bu rehber o zaman
-> güncellenecek. Test FLOP'un parasal değeri yoktur.
+> anahtarları FLOP'un imzalı testnet katılım kitiyle gelecek; kit henüz yayınlanmadı, rehber o zaman
+> güncellenecek. FLOP'un duyuracağı başlangıç bloğundan önceki işlemler puan kazandırmaz, test FLOP'un
+> parasal değeri yoktur.
 
 Adımlar 24 Kasım 2026'da kiralık bir Ubuntu 22.04 sunucuda baştan sona denendi.
 
@@ -26,6 +27,8 @@ Adımlar 24 Kasım 2026'da kiralık bir Ubuntu 22.04 sunucuda baştan sona denen
 | GPU | Gerekmez | Gerekmez |
 
 - Provayı validatörü çalıştıracağınız sunucuda yapmanız en doğrusu.
+- Validatörün kendisi için FLOP ayrıca Node.js 24+, Docker Engine 28+, `flock` ve DA için açık TCP 7001
+  istiyor.
 
 ---
 

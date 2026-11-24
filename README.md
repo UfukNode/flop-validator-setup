@@ -8,8 +8,9 @@ walks through both.
 
 > [!WARNING]
 > Registering does not guarantee a seat; seat assignment, sponsorship and activation are separate
-> steps. Validator keys and the ceremony packet come when FLOP freezes the runtime, and this guide will
-> be updated then. Test FLOP has no monetary value.
+> steps. Validator keys come with FLOP's signed Testnet joining kit, which is not published yet; this
+> guide will be updated then. Activity before FLOP's announced start block earns nothing, and test FLOP
+> has no monetary value.
 
 Every step was run end to end on a rented Ubuntu 22.04 server on 24 November 2026.
 
@@ -26,6 +27,8 @@ Every step was run end to end on a rented Ubuntu 22.04 server on 24 November 202
 | GPU | Not needed | Not needed |
 
 - Rehearse on the server that will run the validator.
+- For the validator itself FLOP also lists Node.js 24+, Docker Engine 28+, `flock` and public TCP 7001
+  for DA.
 
 ---
 
