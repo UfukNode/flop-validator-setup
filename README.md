@@ -1,87 +1,73 @@
-# FLOP Validator Preparation and Application Guide (Devnet)
+# FLOP Testnet Validator Preparation Guide
 
 **English** | [Türkçe](Turkce-Kurulum.md)
 
+FLOP opened registration for the first 50 testnet validator seats. FLOP asks candidates for two
+things: register the team, and rehearse on a keyless Devnet node on a server without a GPU. This guide
+walks through both.
+
 > [!WARNING]
-> This guide does not make you a validator. It prepares your server and gets you ready to apply.
-> On devnet the FLOP team admits validators by hand and does not take applications right away
-> ([FLOP's note](https://x.com/flop_labs/status/2119121264388526205)). Do not rent a big server
-> before you are admitted. The devnet gives no rewards.
+> Registering does not guarantee a seat; seat assignment, sponsorship and activation are separate
+> steps. Validator keys and the ceremony packet come when FLOP freezes the runtime, and this guide will
+> be updated then. Test FLOP has no monetary value.
 
-These steps were tested on 8 November 2026 on a freshly installed Ubuntu 22.04 server. On 13
-November 2026 the guide moved to package 0.4.1-devnet.1, which FLOP's download page now offers
-with its checksum, and steps 8 and 10 were run again with it.
+Every step was run end to end on a rented Ubuntu 22.04 server on 24 November 2026.
 
 ---
 
-## System Requirements
+## Requirements
 
-| Part | Devnet ([FLOP docs](https://docs.flop.network/docs/run-validator)) | Testnet ([FLOP testnet page](https://flop.finance/testnet/)) |
+| Part | Testnet validator (FLOP reference) | Enough for the rehearsal |
 | --- | --- | --- |
-| CPU | 8 dedicated cores | 8+ cores |
-| RAM | 32 GB | 64 GB |
-| Disk | 4 TB NVMe, including DA data | 4 TB NVMe (2 TB minimum) |
-| Network | Reliable, low-latency 1 Gbps | 1 Gbps, redundant |
-| Operating system | Linux amd64 | Not stated |
+| CPU | 8 physical cores, 3.4 GHz or faster | 4 vCPU |
+| RAM | 32 GB ECC (64 GB recommended) | 16 GB |
+| Disk | 4 TB enterprise NVMe | 300 GB SSD |
+| Network | 1 Gbps symmetric | Stable IPv4, open TCP 30333 |
+| GPU | Not needed | Not needed |
 
-- FLOP calls the devnet values planning estimates, not measured minimums, and says the testnet
-  values may change before the testnet opens. No GPU is needed.
-- The commands in this guide are written for Ubuntu.
-- Do the preparation on the server that will run your validator: the key FLOP sends after
-  admission only opens on the server whose details you sent.
+- Rehearse on the server that will run the validator.
 
 ---
 
-## 1. Connect to the Server
+## 1. Register Your Team
+
+Form: https://github.com/flop-labs/network/issues/new?template=operator-application.yml
+
+- Choose `testnet` under **Network** and `validator candidate` under **Requested role**.
+- Give your team name, planned host count, provider and region. You can register before the host
+  is ready.
+- One issue per team, submitted from GitHub's web page. The issue is public: never post a seed, key
+  or password.
+
+Example application:
+
+![Application](assets/01-register.png)
+
+---
+
+## 2. Connect to the Server
 
 ```bash
 ssh root@SERVER_IP
 ```
 
-- Replace `SERVER_IP` with your server's IP address. If it uses a different SSH port:
-  `ssh -p PORT root@SERVER_IP`
-- On the first connection, answer the question with `yes`.
-- On Windows, follow my WSL guide first: https://x.com/UfukDegen/status/1944066889346429338
-- If you logged in as a normal user, type `sudo -i` first.
+- Replace `SERVER_IP` with your server's IP. With another SSH port: `ssh -p PORT root@SERVER_IP`
 
 Example output:
 
-![Connect to the server](assets/01-ssh.png)
+![Connect](assets/02-ssh.png)
 
 ---
 
-## 2. Update the System and Install the Basic Packages
+## 3. Tools
 
 ```bash
-apt update && apt upgrade -y
+apt-get update && apt-get install -y curl jq zstd
 ```
-
-```bash
-apt install -y curl jq age xz-utils
-```
-
-- If a purple window appears, press Enter.
-- If you see `*** System restart required ***` at your next login, you do not need to restart.
 
 Example output:
 
-![Update the system](assets/02-update.png)
-
----
-
-## 3. Name the Server
-
-```bash
-hostnamectl set-hostname your-validator-name
-hostname
-```
-
-- Replace `your-validator-name` with a name made of lowercase letters, digits and hyphens. This
-  name goes to FLOP, so do not change it later.
-
-Example output:
-
-![Name the server](assets/03-hostname.png)
+![Tools](assets/03-tools.png)
 
 ---
 
@@ -95,242 +81,192 @@ curl -fsSL https://get.docker.com | sh
 docker --version && docker compose version
 ```
 
-- If Docker is already installed on your server, skip the first command.
+- Skip the first command if Docker is already installed.
 
 Example output:
 
-![Install Docker](assets/04-docker.png)
+![Docker](assets/04-docker.png)
 
 ---
 
-## 5. Install Node.js 24 and pnpm
+## 5. Download FLOP's Files
 
 ```bash
-cd /tmp
-SUMS=$(curl -fsSL https://nodejs.org/dist/latest-v24.x/SHASUMS256.txt)
-NODE_TGZ=$(echo "$SUMS" | awk '/linux-x64\.tar\.xz$/{print $2}')
-curl -fsSLO "https://nodejs.org/dist/latest-v24.x/$NODE_TGZ"
-echo "$SUMS" | grep " $NODE_TGZ\$" | sha256sum -c -
-tar -xJf "$NODE_TGZ" -C /usr/local --strip-components=1
-node -v
-corepack enable
-```
-
-- You should see an `OK` line and a version that starts with `v24`.
-
-Example output:
-
-![Install Node.js](assets/05-node.png)
-
----
-
-## 6. Install Tailscale
-
-```bash
-. /etc/os-release
-curl -fsSL "https://pkgs.tailscale.com/stable/ubuntu/$VERSION_CODENAME.noarmor.gpg" -o /usr/share/keyrings/tailscale-archive-keyring.gpg
-curl -fsSL "https://pkgs.tailscale.com/stable/ubuntu/$VERSION_CODENAME.tailscale-keyring.list" -o /etc/apt/sources.list.d/tailscale.list
-apt update && apt install -y tailscale
-tailscale status
-```
-
-- The last line should say `Logged out.` Do not run `tailscale up`: the key FLOP sends after
-  admission adds your server to FLOP's network.
-
-Example output:
-
-![Install Tailscale](assets/06-tailscale.png)
-
----
-
-## 7. Install cosign
-
-```bash
-cd /tmp
-curl -fsSLO https://github.com/sigstore/cosign/releases/download/v3.1.4/cosign-linux-amd64
-curl -fsSL https://github.com/sigstore/cosign/releases/download/v3.1.4/cosign_checksums.txt | grep ' cosign-linux-amd64$' | sha256sum -c -
-install -m 755 cosign-linux-amd64 /usr/local/bin/cosign
-```
-
-- You should see `cosign-linux-amd64: OK`.
-
-Example output:
-
-![Install cosign](assets/07-cosign.png)
-
----
-
-## 8. Download and Check the Package
-
-```bash
-mkdir -p /opt/flop-validator && cd /opt/flop-validator
-curl -fsSLO https://explorer.devnet.flop.network/validator-downloads/validator-cs-be91fe83-0.4.1-devnet.1.tar.gz
-echo "715abad72f3a8c658de5f929c6fe01b03d4204b5954925331766053610f3c967  validator-cs-be91fe83-0.4.1-devnet.1.tar.gz" | sha256sum -c -
-tar -xzf validator-cs-be91fe83-0.4.1-devnet.1.tar.gz
-cd validator-cs-be91fe83
-sha256sum -c SHA256SUMS | grep -c ': OK$'
-node preflight.mjs
-```
-
-- You should see `OK`, then `34`, then `verified` on the last line.
-- If you prepared with 0.3.0-devnet.1 or 0.4.0-devnet.1, the three details in step 13 stay the
-  same, so you do not have to apply again. 0.4.1 only fixes `onboard join`: it now waits up to five
-  minutes for the node to serve RPC instead of stopping with WS 1006.
-
-Example output:
-
-![Download and check the package](assets/08-package.png)
-
----
-
-## 9. Check the Signatures
-
-```bash
-WF=https://github.com/flop-labs/flop-core/.github/workflows/build-services.yml@refs/heads/main
-for IMG in \
-  ghcr.io/flop-labs/flop-core/node-devnet@sha256:84498fd73db2464eb13088ab34d369ddf7cddd22a45c810d140c9ff8ec16c91d \
-  ghcr.io/flop-labs/flop-core/da-validator@sha256:c6709bb5bba04978a7800daccd87bb2bf916edd34d7dbf09f84aba5be9aca949; do
-  if cosign verify "$IMG" --certificate-oidc-issuer https://token.actions.githubusercontent.com --certificate-identity "$WF" >/dev/null 2>&1; then echo "OK: ${IMG%%@*}"; else echo "FAILED: ${IMG%%@*}"; fi
+mkdir -p ~/flop-devnet-rpc && cd ~/flop-devnet-rpc
+files=https://gist.githubusercontent.com/sv/7c8b93f3868bc15e3b6eabe0578057e3/raw/21adaa99c601003278d1682bf937696f21d31432
+for file in docker-compose.rpc.yml node-entrypoint.sh rpc_ready.py rpc-pool.env.example rpc-origin.Caddyfile; do
+  curl -fsSL -o "$file" "$files/$file"
 done
+sha256sum --check <<'SUMS'
+6487cd84d5a257659297ad7b8fdd55978e6d8327bfe029d9460645da2591345d  docker-compose.rpc.yml
+7279e81c0d6de4b6c59733b64132f929b8b7dd5825b8f37433d09940a93f983d  node-entrypoint.sh
+6a066b7540628c7db4f455d7bfd2540db54355a4c0a2959d97032b76bcf641cd  rpc_ready.py
+4f7295735f75b5a7b4c0babe3be4b0eef687decab99ba1612f91ee6f3b04d1bb  rpc-pool.env.example
+e184d4f38f054dbe7947efde4d85e6a8964f02e594666ad42b9216dd98a4b2d5  rpc-origin.Caddyfile
+SUMS
 ```
 
-- Both lines should say `OK`. If you see `FAILED`, stop.
+- All five files must say `OK`. They come from FLOP's
+  [own guide](https://gist.github.com/sv/7c8b93f3868bc15e3b6eabe0578057e3).
 
 Example output:
 
-![Check the signatures](assets/09-signatures.png)
+![FLOP's files](assets/05-files.png)
 
 ---
 
-## 10. Install the Dependencies
+## 6. Download the Chain Spec
 
 ```bash
-cd /opt/flop-validator/validator-cs-be91fe83
-export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
-pnpm --version
-pnpm install --frozen-lockfile --ignore-scripts
+curl -fsSL -o chain.raw.json https://explorer.devnet.flop.network/validator-downloads/flop_devnet_ts-99c172c095340ace.raw.json
+echo "3b213c38e7678285bc38fbdfded5dbe3d6acbd16e836b14aaaeef2f6ae1cd16e  chain.raw.json" | sha256sum --check
+cp -n rpc-pool.env.example rpc-pool.env
 ```
-
-- You should see `12.14.0` and `Done in ...`. If you see `Update available!`, do not update pnpm.
 
 Example output:
 
-![Install the dependencies](assets/10-pnpm.png)
+![Chain spec](assets/06-spec.png)
 
 ---
 
-## 11. Create the Validator Account
+## 7. Settings
 
 ```bash
-pnpm onboard prepare
-ls -la account.json .env
+P2P_PORT_DIS=30333
+sed -i "s#^HOST_IP=.*#HOST_IP=$(ip -4 route get 1.1.1.1 | awk '{print $7}')#" rpc-pool.env
+sed -i "s#^PUBLIC_ADDR=.*#PUBLIC_ADDR=/ip4/$(curl -4fsS https://ifconfig.me)/tcp/$P2P_PORT_DIS#" rpc-pool.env
+grep -E '^(HOST_IP|RPC_BIND_IP|PROMETHEUS_BIND_IP|STATE_PRUNING)=' rpc-pool.env
 ```
 
-- `Public SS58 address` is your validator address. It is not a secret.
-- The command prints two details, but FLOP asks for three (step 13).
-- `account.json` and `.env` hold your secret key. Never share them.
+- Open inbound TCP 30333 in your provider's panel. If the provider forwards it under another number,
+  put that number in the first line (32014 on the server in the picture).
+- `RPC_BIND_IP` and `PROMETHEUS_BIND_IP` must stay `127.0.0.1`.
 
 Example output:
 
-![Create the validator account](assets/11-prepare.png)
+![Settings](assets/07-env.png)
 
 ---
 
-## 12. Back Up the Account
-
-Leave the server (`exit`) and run these commands **on your own computer**:
+## 8. Start the Node
 
 ```bash
-mkdir -p ~/flop-validator-backup && chmod 700 ~/flop-validator-backup
-scp root@SERVER_IP:/opt/flop-validator/validator-cs-be91fe83/account.json ~/flop-validator-backup/
-scp root@SERVER_IP:/opt/flop-validator/validator-cs-be91fe83/.env ~/flop-validator-backup/
+dc() { docker compose --env-file ~/flop-devnet-rpc/rpc-pool.env -f ~/flop-devnet-rpc/docker-compose.rpc.yml "$@"; }
+dc config --quiet && dc up -d
 ```
-
-- If your server uses a different SSH port, add `-P PORT` right after `scp`.
-- Then connect to the server again: `ssh root@SERVER_IP`
-
-Example output:
-
-![Back up the account](assets/12-backup.png)
-
----
-
-## 13. The Details for FLOP
 
 ```bash
-hostname
-jq -r .ss58Address /opt/flop-validator/validator-cs-be91fe83/account.json
-cat /etc/ssh/ssh_host_ed25519_key.pub
-ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub
+dc logs --tail=40 rpc | grep -E "Syncing|Imported|finalized" | tail -4
+curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:9619/ready
 ```
 
-- FLOP asks for three details, none of them secret: the hostname, the SS58 address and the line
-  that starts with `ssh-ed25519`.
-- FLOP may ask you to confirm the `SHA256:` fingerprint on a second channel.
-- Never share `/etc/ssh/ssh_host_ed25519_key`, the file without `.pub`.
+- `503` is normal: the node is syncing. Paste the `dc` line again whenever you reconnect.
 
 Example output:
 
-![The details for FLOP](assets/13-details.png)
+![Start the node](assets/08-start.png)
 
 ---
 
-## 14. Apply
+## 9. Download FLOP's Daily Snapshot
 
-1. **Interest form:** fill in the form at https://flop.finance/apply/validator. Choose
-   **Self-hosted** as the setup type and **Testnet** as the timing.
-2. **GitHub #10:** according to FLOP's docs, if you have no contact on the FLOP team, you ask for
-   an introduction with a comment in [#10](https://github.com/flop-labs/network/issues/10). You
-   can use this text with your own details:
+A sync from genesis takes about 3 hours. FLOP's daily snapshot cuts it to minutes.
 
-```text
-Devnet validator onboarding request. I have no operations contact yet.
-
-Hostname: <hostname>
-Public SS58 address: <5...>
-SSH host public key (encryption recipient only): <ssh-ed25519 AAAA...>
-
-Prepared with validator-cs-be91fe83 0.4.1-devnet.1: the archive SHA-256 matches FLOP's download page,
-SHA256SUMS and node preflight.mjs pass, both Cosign signatures verify and pnpm onboard prepare
-is done. Tailscale is installed and logged out (Tailscale SSH will stay off) and age is
-installed. Nothing is started or registered.
-
-Host: <cores> cores, <RAM> GB RAM, <disk> NVMe, <location>.
-I can confirm the host key fingerprint on a second channel.
-This comment contains only public values.
+```bash
+mkdir -p ~/flop-devnet-rpc/seed && cd ~/flop-devnet-rpc/seed
+BASE=https://snapshots.flop.network/devnet-ts/archive
+curl -fsS -o latest.json "$BASE/latest.json"
+jq -r '.name, .genesis_hash' latest.json
+jq -r '.parts[] | "\(.sha256)  \(.file)"' latest.json > SHA256SUMS
+jq -r '.parts[] | .file' latest.json | while read -r f; do curl -fsS -C - -o "$f" "$BASE/$(jq -r .name latest.json)/$f"; done
+sha256sum --check SHA256SUMS
+mkdir -p unpack && jq -r '.parts[].file' latest.json | xargs cat | zstd -d | tar -x -C unpack && ls unpack
 ```
 
-- The comment is not an admission. FLOP promises no response time and has not answered anyone
-  there so far. Follow [@flop_labs](https://x.com/flop_labs) for updates.
+- The snapshot is about 42 GB. Keep at least 120 GB free.
+- If it stops, paste the same block again: it resumes.
+
+Example output:
+
+![Daily snapshot](assets/09-snapshot.png)
 
 ---
 
-## After Admission (Not Tested Yet)
+## 10. Load the Snapshot
 
-After admission, FLOP sends you a single-use Tailscale key, a `da-peers.json` file and the stake.
-Instead of the stake, it may send a `validator-grant.json` file. According to
-[FLOP's docs](https://docs.flop.network/docs/run-validator):
+```bash
+cd ~/flop-devnet-rpc && dc stop
+db="$(docker volume inspect -f '{{.Mountpoint}}' flop-devnet-rpc-pool_rpc-data)/chains/flop_devnet_ts/db"
+mv "$db/full" "$db/full.from-genesis" && mv seed/unpack/full "$db/full" && chown -R --reference="$db" "$db/full"
+dc up -d
+```
 
-1. Save the key in the package folder as `tailnet-key.age` and run the `tailscale up` command FLOP
-   gives you. Then run `tailscale set --ssh=false`.
-2. Put `da-peers.json`, and `validator-grant.json` if you got one, in the package folder.
-3. When FLOP says its access checks are done:
+```bash
+until curl -fs -o /dev/null http://127.0.0.1:9619/ready; do sleep 5; done; echo ready
+```
 
-   ```bash
-   cd /opt/flop-validator/validator-cs-be91fe83
-   pnpm onboard join
-   ```
+- `ready` means the node caught up.
+- Then free the space: `rm -rf ~/flop-devnet-rpc/seed "$db/full.from-genesis"`
 
-   With `validator-grant.json`, `join` registers you through FLOP's sponsor, which holds the
-   stake. When you see the `Ready:` line, tell FLOP "ready".
-4. After FLOP tells you that you are active, check it: `pnpm onboard verify`
+Example output:
 
-- `pnpm onboard status` shows where you stand: queued, deferred, promoted or active.
-- Do not register the account any other way before `join`: the sponsor accepts only new accounts.
-- If you run `join` before admission, you get `tailscale failed; no signing material was
-  printed`. This is normal.
-- If `join` stops halfway, do not run it again, do not delete any files, and contact FLOP.
-- Never run `docker compose down -v`.
+![Load the snapshot](assets/10-swap.png)
+
+---
+
+## 11. Check
+
+```bash
+rpc() { curl -fsS --max-time 15 "$1" -H 'Content-Type: application/json' --data "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"$2\",\"params\":$3}" | jq -er .result; }
+fin() { printf '%d' "$(rpc "$1" chain_getHeader "[\"$(rpc "$1" chain_getFinalizedHead '[]')\"]" | jq -r .number)"; }
+observe() {
+  L=http://127.0.0.1:9944/; R=https://rpc.devnet.flop.network/
+  lh=$(fin $L); rh=$(fin $R); ch=$(( lh < rh ? lh : rh ))
+  [ "$(rpc $L chain_getBlockHash '[0]')" = "$(rpc $R chain_getBlockHash '[0]')" ] || { echo "GENESIS MISMATCH"; return 1; }
+  lhash=$(rpc $L chain_getBlockHash "[$ch]"); rhash=$(rpc $R chain_getBlockHash "[$ch]")
+  [ "$lhash" = "$rhash" ] && ok=MATCH || ok=MISMATCH
+  echo "UTC=$(date -u +%FT%TZ) local=$lh reference=$rh common=$ch $ok hash=$lhash peer=$(rpc $L system_localPeerId '[]')"
+}
+```
+
+```bash
+observe
+sleep 60; observe
+dc restart rpc ready
+until curl -fs -o /dev/null http://127.0.0.1:9619/ready; do sleep 5; done; observe
+```
+
+- All three lines must say `MATCH` and `peer=` must not change. This is the rehearsal FLOP asks for:
+  your node follows the chain correctly and keeps its identity across a restart.
+
+Example output:
+
+![Check](assets/11-receipt.png)
+
+---
+
+## 12. Backup
+
+The node identity is one file. Pull it to your own computer:
+
+```bash
+mkdir -p ~/flop-validator-backup
+scp root@SERVER_IP:/var/lib/docker/volumes/flop-devnet-rpc-pool_rpc-data/_data/node_key.dat ~/flop-validator-backup/
+scp root@SERVER_IP:flop-devnet-rpc/rpc-pool.env ~/flop-validator-backup/
+```
+
+- To move servers, run steps 2-7 on the new one, copy `node_key.dat` to its home folder and run this
+  instead of step 8; the peer ID stays the same:
+
+```bash
+dc() { docker compose --env-file ~/flop-devnet-rpc/rpc-pool.env -f ~/flop-devnet-rpc/docker-compose.rpc.yml "$@"; }
+dc up -d && sleep 10 && dc stop
+V=$(docker volume inspect -f '{{.Mountpoint}}' flop-devnet-rpc-pool_rpc-data)
+install -o "$(stat -c %u $V/node_key.dat)" -g "$(stat -c %g $V/node_key.dat)" -m 644 ~/node_key.dat $V/node_key.dat
+dc up -d
+```
+
+- Never share `node_key.dat`.
 
 ---
 

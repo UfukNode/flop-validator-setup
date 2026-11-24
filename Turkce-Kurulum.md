@@ -1,38 +1,51 @@
-# FLOP Validatör Hazırlık ve Başvuru Rehberi (Devnet)
+# FLOP Testnet Validatör Hazırlık Rehberi
 
 **Türkçe** | [English](README.md)
 
-> [!WARNING]
-> Bu rehber sizi validatör yapmaz, sunucunuzu hazırlayıp başvurmanızı sağlar. Devnet'te
-> validatörleri FLOP ekibi elle onaylıyor ve başvuruları hemen almıyor
-> ([FLOP'un açıklaması](https://x.com/flop_labs/status/2119121264388526205)). Onay gelmeden büyük
-> bir sunucu kiralamayın. Devnet ödül vermez.
+FLOP testnette ilk 50 validatör koltuğu için kayıt açtı. FLOP adaylardan iki şey istiyor: ekibini
+kaydetmek ve GPU'suz bir sunucuda anahtarsız bir devnet düğümüyle prova yapmak. Bu rehber ikisini de
+adım adım yaptırır.
 
-Adımlar 8 Kasım 2026'da sıfırdan kurulan bir Ubuntu 22.04 sunucuda denendi. Rehber 13 Kasım
-2026'da FLOP'un indirme sayfasının özetiyle birlikte sunduğu 0.4.1-devnet.1 paketine geçti ve 8.
-ile 10. adımlar bu paketle tekrar çalıştırıldı.
+> [!WARNING]
+> Kayıt koltuk garantisi değildir; koltuk, sponsorluk ve aktivasyon ayrı adımlardır. Validatör
+> anahtarları ve tören paketi FLOP zincir yazılımını dondurduğunda yayınlanacak, bu rehber o zaman
+> güncellenecek. Test FLOP'un parasal değeri yoktur.
+
+Adımlar 24 Kasım 2026'da kiralık bir Ubuntu 22.04 sunucuda baştan sona denendi.
 
 ---
 
 ## Sistem Gereksinimleri
 
-| Parça | Devnet ([FLOP belgesi](https://docs.flop.network/docs/run-validator)) | Testnet ([FLOP testnet sayfası](https://flop.finance/testnet/)) |
+| Parça | Testnet validatörü (FLOP referansı) | Prova için yeterli |
 | --- | --- | --- |
-| İşlemci | 8 ayrılmış (dedicated) çekirdek | 8+ çekirdek |
-| RAM | 32 GB | 64 GB |
-| Disk | 4 TB NVMe (DA verisi dahil) | 4 TB NVMe (en az 2 TB) |
-| İnternet | Güvenilir, düşük gecikmeli 1 Gbps | 1 Gbps, yedekli |
-| İşletim sistemi | Linux amd64 | Belirtilmemiş |
+| İşlemci | 8 fiziksel çekirdek, 3,4 GHz veya üstü | 4 vCPU |
+| RAM | 32 GB ECC (64 GB önerilen) | 16 GB |
+| Disk | 4 TB kurumsal NVMe | 300 GB SSD |
+| İnternet | 1 Gbps simetrik | Sabit IPv4, açık TCP 30333 |
+| GPU | Gerekmez | Gerekmez |
 
-- FLOP devnet değerlerinin ölçülmüş alt sınır değil planlama tahmini olduğunu, testnet
-  değerlerinin de testnet açılmadan değişebileceğini söylüyor. GPU gerekmez.
-- Bu rehberdeki komutlar Ubuntu için yazıldı.
-- Hazırlığı validatörü çalıştıracağınız sunucuda yapın: FLOP'un onaydan sonra göndereceği anahtar
-  sadece bilgilerini gönderdiğiniz sunucuda açılır.
+- Provayı validatörü çalıştıracağınız sunucuda yapmanız en doğrusu.
 
 ---
 
-## 1. Sunucuya Bağlanma
+## 1. Ekibinizi Kaydedin
+
+Başvuru formu: https://github.com/flop-labs/network/issues/new?template=operator-application.yml
+
+- **Network** alanında `testnet`, **Requested role** alanında `validator candidate` seçin.
+- Ekip adınızı, kaç sunucu planladığınızı, sağlayıcı ve bölgeyi yazın. Sunucu hazır olmadan da
+  kaydolabilirsiniz.
+- Ekip başına tek başvuru açın ve GitHub'ın web sayfasından gönderin. Başvuru herkese açıktır:
+  tohum kelimesi, anahtar veya şifre yazmayın.
+
+Örnek başvuru:
+
+![Başvuru](assets/01-register.png)
+
+---
+
+## 2. Sunucuya Bağlanma
 
 ```bash
 ssh root@SUNUCU_IP
@@ -40,50 +53,24 @@ ssh root@SUNUCU_IP
 
 - `SUNUCU_IP` yerine sunucunuzun IP adresini yazın. Farklı bir SSH portu varsa:
   `ssh -p PORT root@SUNUCU_IP`
-- İlk bağlantıda çıkan soruya `yes` yazın.
 - Windows kullanıyorsanız önce WSL rehberimi takip edin:
   https://x.com/UfukDegen/status/1944066889346429338
-- Normal bir kullanıcıyla bağlandıysanız önce `sudo -i` yazın.
 
 Örnek çıktı:
 
-![Sunucuya bağlanma](assets/01-ssh.png)
+![Sunucuya bağlanma](assets/02-ssh.png)
 
 ---
 
-## 2. Sistemi Güncelleme ve Gerekli Paketler
+## 3. Gerekli Araçlar
 
 ```bash
-apt update && apt upgrade -y
+apt-get update && apt-get install -y curl jq zstd
 ```
-
-```bash
-apt install -y curl jq age xz-utils
-```
-
-- Mor bir pencere çıkarsa Enter'a basın.
-- Sonraki girişte `*** System restart required ***` yazısını görürseniz yeniden başlatmanız
-  gerekmez.
 
 Örnek çıktı:
 
-![Sistemi güncelleme](assets/02-update.png)
-
----
-
-## 3. Sunucuya İsim Verme
-
-```bash
-hostnamectl set-hostname validator-ismi-girin
-hostname
-```
-
-- `validator-ismi-girin` yerine küçük harf, rakam ve tireden oluşan bir isim yazın. Bu isim
-  FLOP'a gönderilir, sonra değiştirmeyin.
-
-Örnek çıktı:
-
-![Sunucuya isim verme](assets/03-hostname.png)
+![Gerekli araçlar](assets/03-tools.png)
 
 ---
 
@@ -97,7 +84,7 @@ curl -fsSL https://get.docker.com | sh
 docker --version && docker compose version
 ```
 
-- Docker sunucunuzda zaten kuruluysa ilk komutu atlayın.
+- Docker zaten kuruluysa ilk komutu atlayın.
 
 Örnek çıktı:
 
@@ -105,236 +92,185 @@ docker --version && docker compose version
 
 ---
 
-## 5. Node.js 24 ve pnpm Kurulumu
+## 5. FLOP Dosyalarını İndirme
 
 ```bash
-cd /tmp
-SUMS=$(curl -fsSL https://nodejs.org/dist/latest-v24.x/SHASUMS256.txt)
-NODE_TGZ=$(echo "$SUMS" | awk '/linux-x64\.tar\.xz$/{print $2}')
-curl -fsSLO "https://nodejs.org/dist/latest-v24.x/$NODE_TGZ"
-echo "$SUMS" | grep " $NODE_TGZ\$" | sha256sum -c -
-tar -xJf "$NODE_TGZ" -C /usr/local --strip-components=1
-node -v
-corepack enable
-```
-
-- `OK` satırını ve `v24` ile başlayan bir sürüm görmelisiniz.
-
-Örnek çıktı:
-
-![Node.js kurulumu](assets/05-node.png)
-
----
-
-## 6. Tailscale Kurulumu
-
-```bash
-. /etc/os-release
-curl -fsSL "https://pkgs.tailscale.com/stable/ubuntu/$VERSION_CODENAME.noarmor.gpg" -o /usr/share/keyrings/tailscale-archive-keyring.gpg
-curl -fsSL "https://pkgs.tailscale.com/stable/ubuntu/$VERSION_CODENAME.tailscale-keyring.list" -o /etc/apt/sources.list.d/tailscale.list
-apt update && apt install -y tailscale
-tailscale status
-```
-
-- Son satırda `Logged out.` yazmalı. `tailscale up` çalıştırmayın: sunucuyu FLOP'un ağına onaydan
-  sonra FLOP'un göndereceği anahtar ekler.
-
-Örnek çıktı:
-
-![Tailscale kurulumu](assets/06-tailscale.png)
-
----
-
-## 7. cosign Kurulumu
-
-```bash
-cd /tmp
-curl -fsSLO https://github.com/sigstore/cosign/releases/download/v3.1.4/cosign-linux-amd64
-curl -fsSL https://github.com/sigstore/cosign/releases/download/v3.1.4/cosign_checksums.txt | grep ' cosign-linux-amd64$' | sha256sum -c -
-install -m 755 cosign-linux-amd64 /usr/local/bin/cosign
-```
-
-- `cosign-linux-amd64: OK` görmelisiniz.
-
-Örnek çıktı:
-
-![cosign kurulumu](assets/07-cosign.png)
-
----
-
-## 8. Paketi İndirme ve Doğrulama
-
-```bash
-mkdir -p /opt/flop-validator && cd /opt/flop-validator
-curl -fsSLO https://explorer.devnet.flop.network/validator-downloads/validator-cs-be91fe83-0.4.1-devnet.1.tar.gz
-echo "715abad72f3a8c658de5f929c6fe01b03d4204b5954925331766053610f3c967  validator-cs-be91fe83-0.4.1-devnet.1.tar.gz" | sha256sum -c -
-tar -xzf validator-cs-be91fe83-0.4.1-devnet.1.tar.gz
-cd validator-cs-be91fe83
-sha256sum -c SHA256SUMS | grep -c ': OK$'
-node preflight.mjs
-```
-
-- Sırasıyla `OK`, `34` ve son satırda `verified` görmelisiniz.
-- Hazırlığı 0.3.0-devnet.1 veya 0.4.0-devnet.1 ile yaptıysanız 13. adımdaki üç bilgi değişmez,
-  yeniden başvurmanız gerekmez. 0.4.1 yalnızca `onboard join` adımını düzeltir: artık WS 1006
-  hatasıyla durmak yerine düğümün RPC sunmasını beş dakikaya kadar bekler.
-
-Örnek çıktı:
-
-![Paketi indirme ve doğrulama](assets/08-package.png)
-
----
-
-## 9. İmzaları Doğrulama
-
-```bash
-WF=https://github.com/flop-labs/flop-core/.github/workflows/build-services.yml@refs/heads/main
-for IMG in \
-  ghcr.io/flop-labs/flop-core/node-devnet@sha256:84498fd73db2464eb13088ab34d369ddf7cddd22a45c810d140c9ff8ec16c91d \
-  ghcr.io/flop-labs/flop-core/da-validator@sha256:c6709bb5bba04978a7800daccd87bb2bf916edd34d7dbf09f84aba5be9aca949; do
-  if cosign verify "$IMG" --certificate-oidc-issuer https://token.actions.githubusercontent.com --certificate-identity "$WF" >/dev/null 2>&1; then echo "OK: ${IMG%%@*}"; else echo "FAILED: ${IMG%%@*}"; fi
+mkdir -p ~/flop-devnet-rpc && cd ~/flop-devnet-rpc
+files=https://gist.githubusercontent.com/sv/7c8b93f3868bc15e3b6eabe0578057e3/raw/21adaa99c601003278d1682bf937696f21d31432
+for file in docker-compose.rpc.yml node-entrypoint.sh rpc_ready.py rpc-pool.env.example rpc-origin.Caddyfile; do
+  curl -fsSL -o "$file" "$files/$file"
 done
+sha256sum --check <<'SUMS'
+6487cd84d5a257659297ad7b8fdd55978e6d8327bfe029d9460645da2591345d  docker-compose.rpc.yml
+7279e81c0d6de4b6c59733b64132f929b8b7dd5825b8f37433d09940a93f983d  node-entrypoint.sh
+6a066b7540628c7db4f455d7bfd2540db54355a4c0a2959d97032b76bcf641cd  rpc_ready.py
+4f7295735f75b5a7b4c0babe3be4b0eef687decab99ba1612f91ee6f3b04d1bb  rpc-pool.env.example
+e184d4f38f054dbe7947efde4d85e6a8964f02e594666ad42b9216dd98a4b2d5  rpc-origin.Caddyfile
+SUMS
 ```
 
-- İki satırda da `OK` görmelisiniz. `FAILED` görürseniz devam etmeyin.
+- Beş dosyada da `OK` görmelisiniz. Dosyalar FLOP'un
+  [kendi rehberinden](https://gist.github.com/sv/7c8b93f3868bc15e3b6eabe0578057e3) gelir.
 
 Örnek çıktı:
 
-![İmzaları doğrulama](assets/09-signatures.png)
+![FLOP dosyaları](assets/05-files.png)
 
 ---
 
-## 10. Bağımlılıkları Kurma
+## 6. Zincir Tanımını İndirme
 
 ```bash
-cd /opt/flop-validator/validator-cs-be91fe83
-export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
-pnpm --version
-pnpm install --frozen-lockfile --ignore-scripts
+curl -fsSL -o chain.raw.json https://explorer.devnet.flop.network/validator-downloads/flop_devnet_ts-99c172c095340ace.raw.json
+echo "3b213c38e7678285bc38fbdfded5dbe3d6acbd16e836b14aaaeef2f6ae1cd16e  chain.raw.json" | sha256sum --check
+cp -n rpc-pool.env.example rpc-pool.env
 ```
-
-- `12.14.0` ve `Done in ...` görmelisiniz. `Update available!` yazısı çıkarsa pnpm'i
-  güncellemeyin.
 
 Örnek çıktı:
 
-![Bağımlılıkları kurma](assets/10-pnpm.png)
+![Zincir tanımı](assets/06-spec.png)
 
 ---
 
-## 11. Validatör Hesabını Oluşturma
+## 7. Ayarları Yazma
 
 ```bash
-pnpm onboard prepare
-ls -la account.json .env
+P2P_PORT_DIS=30333
+sed -i "s#^HOST_IP=.*#HOST_IP=$(ip -4 route get 1.1.1.1 | awk '{print $7}')#" rpc-pool.env
+sed -i "s#^PUBLIC_ADDR=.*#PUBLIC_ADDR=/ip4/$(curl -4fsS https://ifconfig.me)/tcp/$P2P_PORT_DIS#" rpc-pool.env
+grep -E '^(HOST_IP|RPC_BIND_IP|PROMETHEUS_BIND_IP|STATE_PRUNING)=' rpc-pool.env
 ```
 
-- `Public SS58 address` validatör adresinizdir, gizli değildir.
-- Komut iki bilgi yazar ama FLOP üç bilgi ister (13. adım).
-- `account.json` ve `.env` gizli anahtarınızı içerir. Kimseyle paylaşmayın.
+- Sağlayıcınızın panelinde TCP 30333'ü dışarıya açın. Sağlayıcı bu portu başka bir numarayla
+  yönlendiriyorsa ilk satıra o numarayı yazın (görseldeki sunucuda 32014).
+- `RPC_BIND_IP` ve `PROMETHEUS_BIND_IP` `127.0.0.1` kalmalı.
 
 Örnek çıktı:
 
-![Validatör hesabını oluşturma](assets/11-prepare.png)
+![Ayarlar](assets/07-env.png)
 
 ---
 
-## 12. Yedek Alma
-
-Sunucudan çıkın (`exit`) ve şu komutları **kendi bilgisayarınızda** çalıştırın:
+## 8. Düğümü Başlatma
 
 ```bash
-mkdir -p ~/flop-validator-backup && chmod 700 ~/flop-validator-backup
-scp root@SUNUCU_IP:/opt/flop-validator/validator-cs-be91fe83/account.json ~/flop-validator-backup/
-scp root@SUNUCU_IP:/opt/flop-validator/validator-cs-be91fe83/.env ~/flop-validator-backup/
+dc() { docker compose --env-file ~/flop-devnet-rpc/rpc-pool.env -f ~/flop-devnet-rpc/docker-compose.rpc.yml "$@"; }
+dc config --quiet && dc up -d
 ```
-
-- Farklı bir SSH portu varsa `scp` kelimesinden sonra `-P PORT` ekleyin.
-- Sonra sunucuya tekrar bağlanın: `ssh root@SUNUCU_IP`
-
-Örnek çıktı:
-
-![Yedek alma](assets/12-backup.png)
-
----
-
-## 13. FLOP'a Gönderilecek Bilgiler
 
 ```bash
-hostname
-jq -r .ss58Address /opt/flop-validator/validator-cs-be91fe83/account.json
-cat /etc/ssh/ssh_host_ed25519_key.pub
-ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub
+dc logs --tail=40 rpc | grep -E "Syncing|Imported|finalized" | tail -4
+curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:9619/ready
 ```
 
-- FLOP üç bilgi ister, üçü de gizli değildir: hostname, SS58 adresi ve `ssh-ed25519` ile
-  başlayan satır.
-- `SHA256:` ile başlayan parmak izini FLOP sizden ikinci bir kanaldan teyit etmenizi isteyebilir.
-- Sonu `.pub` olmayan `/etc/ssh/ssh_host_ed25519_key` dosyasını asla paylaşmayın.
+- `503` normal: düğüm senkron oluyor. Sunucuya yeniden bağlandığınızda `dc` satırını tekrar
+  yapıştırın.
 
 Örnek çıktı:
 
-![FLOP'a gönderilecek bilgiler](assets/13-details.png)
+![Düğümü başlatma](assets/08-start.png)
 
 ---
 
-## 14. Başvuru
+## 9. FLOP'un Günlük Yedeğini İndirme
 
-1. **İlgi formu:** https://flop.finance/apply/validator adresindeki formu doldurun. Kurulum türü
-   olarak **Self-hosted**, zaman olarak **Testnet** seçin.
-2. **GitHub #10:** FLOP'un belgesine göre, FLOP ekibinden tanıdığınız yoksa
-   [#10](https://github.com/flop-labs/network/issues/10) sayfasına yorum yazıp tanıştırılma
-   istiyorsunuz. Şu metni kendi bilgilerinizle kullanabilirsiniz:
+Baştan senkron yaklaşık 3 saat sürer. FLOP'un günlük yedeğiyle birkaç dakikaya iner.
 
-```text
-Devnet validator onboarding request. I have no operations contact yet.
-
-Hostname: <hostname>
-Public SS58 address: <5...>
-SSH host public key (encryption recipient only): <ssh-ed25519 AAAA...>
-
-Prepared with validator-cs-be91fe83 0.4.1-devnet.1: the archive SHA-256 matches FLOP's download page,
-SHA256SUMS and node preflight.mjs pass, both Cosign signatures verify and pnpm onboard prepare
-is done. Tailscale is installed and logged out (Tailscale SSH will stay off) and age is
-installed. Nothing is started or registered.
-
-Host: <cores> cores, <RAM> GB RAM, <disk> NVMe, <location>.
-I can confirm the host key fingerprint on a second channel.
-This comment contains only public values.
+```bash
+mkdir -p ~/flop-devnet-rpc/seed && cd ~/flop-devnet-rpc/seed
+BASE=https://snapshots.flop.network/devnet-ts/archive
+curl -fsS -o latest.json "$BASE/latest.json"
+jq -r '.name, .genesis_hash' latest.json
+jq -r '.parts[] | "\(.sha256)  \(.file)"' latest.json > SHA256SUMS
+jq -r '.parts[] | .file' latest.json | while read -r f; do curl -fsS -C - -o "$f" "$BASE/$(jq -r .name latest.json)/$f"; done
+sha256sum --check SHA256SUMS
+mkdir -p unpack && jq -r '.parts[].file' latest.json | xargs cat | zstd -d | tar -x -C unpack && ls unpack
 ```
 
-- Bu yorum onay anlamına gelmez. FLOP cevap süresi vermiyor ve şu ana kadar orada kimseye cevap
-  vermedi. Güncellemeleri [@flop_labs](https://x.com/flop_labs) hesabından takip edin.
+- Yedek yaklaşık 42 GB. Diskte en az 120 GB boş yer olsun.
+- Yarıda kalırsa aynı bloğu tekrar yapıştırın, kaldığı yerden devam eder.
+
+Örnek çıktı:
+
+![Günlük yedek](assets/09-snapshot.png)
 
 ---
 
-## Onaydan Sonra (Henüz Denenmedi)
+## 10. Yedeği Düğüme Yükleme
 
-FLOP onay verince size tek kullanımlık bir Tailscale anahtarı, `da-peers.json` dosyası ve stake
-gönderir. Stake yerine bir `validator-grant.json` dosyası da gönderebilir.
-[FLOP'un belgesine](https://docs.flop.network/docs/run-validator) göre:
+```bash
+cd ~/flop-devnet-rpc && dc stop
+db="$(docker volume inspect -f '{{.Mountpoint}}' flop-devnet-rpc-pool_rpc-data)/chains/flop_devnet_ts/db"
+mv "$db/full" "$db/full.from-genesis" && mv seed/unpack/full "$db/full" && chown -R --reference="$db" "$db/full"
+dc up -d
+```
 
-1. Anahtarı paket klasörüne `tailnet-key.age` adıyla kaydedin ve FLOP'un verdiği `tailscale up`
-   komutunu çalıştırın. Ardından `tailscale set --ssh=false` yazın.
-2. `da-peers.json` dosyasını, geldiyse `validator-grant.json` dosyasını da paket klasörüne koyun.
-3. FLOP erişim kontrollerini bitirdiğini söyleyince:
+```bash
+until curl -fs -o /dev/null http://127.0.0.1:9619/ready; do sleep 5; done; echo ready
+```
 
-   ```bash
-   cd /opt/flop-validator/validator-cs-be91fe83
-   pnpm onboard join
-   ```
+- `ready` yazınca düğüm zincire yetişmiştir.
+- Sonra yer açmak için: `rm -rf ~/flop-devnet-rpc/seed "$db/full.from-genesis"`
 
-   `validator-grant.json` varsa `join` kaydınızı FLOP'un sponsoru üzerinden yapar, stake'i sponsor
-   tutar. `Ready:` satırını görünce FLOP'a "ready" yazın.
-4. FLOP aktif olduğunuzu bildirince kontrol edin: `pnpm onboard verify`
+Örnek çıktı:
 
-- `pnpm onboard status` nerede olduğunuzu gösterir: sırada (queued), ertelenmiş (deferred), terfi
-  etmiş (promoted) ya da aktif (active).
-- `join` öncesinde hesabı başka bir yolla kaydetmeyin: sponsor yalnızca yeni hesapları kabul eder.
-- Onaydan önce `join` çalıştırırsanız `tailscale failed; no signing material was printed` hatası
-  alırsınız, bu normaldir.
-- `join` yarıda kalırsa tekrar çalıştırmayın, dosyaları silmeyin ve FLOP'a yazın.
-- `docker compose down -v` komutunu asla çalıştırmayın.
+![Yedeği yükleme](assets/10-swap.png)
+
+---
+
+## 11. Kontrol
+
+```bash
+rpc() { curl -fsS --max-time 15 "$1" -H 'Content-Type: application/json' --data "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"$2\",\"params\":$3}" | jq -er .result; }
+fin() { printf '%d' "$(rpc "$1" chain_getHeader "[\"$(rpc "$1" chain_getFinalizedHead '[]')\"]" | jq -r .number)"; }
+observe() {
+  L=http://127.0.0.1:9944/; R=https://rpc.devnet.flop.network/
+  lh=$(fin $L); rh=$(fin $R); ch=$(( lh < rh ? lh : rh ))
+  [ "$(rpc $L chain_getBlockHash '[0]')" = "$(rpc $R chain_getBlockHash '[0]')" ] || { echo "GENESIS MISMATCH"; return 1; }
+  lhash=$(rpc $L chain_getBlockHash "[$ch]"); rhash=$(rpc $R chain_getBlockHash "[$ch]")
+  [ "$lhash" = "$rhash" ] && ok=MATCH || ok=MISMATCH
+  echo "UTC=$(date -u +%FT%TZ) local=$lh reference=$rh common=$ch $ok hash=$lhash peer=$(rpc $L system_localPeerId '[]')"
+}
+```
+
+```bash
+observe
+sleep 60; observe
+dc restart rpc ready
+until curl -fs -o /dev/null http://127.0.0.1:9619/ready; do sleep 5; done; observe
+```
+
+- Üç satırda da `MATCH` yazmalı ve `peer=` değeri değişmemeli. Bu, FLOP'un istediği provadır:
+  düğümünüz zinciri doğru takip ediyor ve yeniden başlayınca kimliğini koruyor.
+
+Örnek çıktı:
+
+![Kontrol](assets/11-receipt.png)
+
+---
+
+## 12. Yedekleme
+
+Düğümün kimliği tek bir dosyada. Kendi bilgisayarınızda bir terminal açıp çekin:
+
+```bash
+mkdir -p ~/flop-validator-yedek
+scp root@SUNUCU_IP:/var/lib/docker/volumes/flop-devnet-rpc-pool_rpc-data/_data/node_key.dat ~/flop-validator-yedek/
+scp root@SUNUCU_IP:flop-devnet-rpc/rpc-pool.env ~/flop-validator-yedek/
+```
+
+- Başka sunucuya geçerken 2-7. adımları yapın, `node_key.dat` dosyasını yeni sunucunun ana
+  klasörüne kopyalayın ve 8. adım yerine şunu çalıştırın; peer ID aynı kalır:
+
+```bash
+dc() { docker compose --env-file ~/flop-devnet-rpc/rpc-pool.env -f ~/flop-devnet-rpc/docker-compose.rpc.yml "$@"; }
+dc up -d && sleep 10 && dc stop
+V=$(docker volume inspect -f '{{.Mountpoint}}' flop-devnet-rpc-pool_rpc-data)
+install -o "$(stat -c %u $V/node_key.dat)" -g "$(stat -c %g $V/node_key.dat)" -m 644 ~/node_key.dat $V/node_key.dat
+dc up -d
+```
+
+- `node_key.dat` dosyasını kimseyle paylaşmayın.
 
 ---
 
